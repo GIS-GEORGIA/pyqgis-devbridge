@@ -1,0 +1,18 @@
+{
+  "welcome": "PyQGIS DevBridge — environment setup & live debugging",
+  "detecting_qgis": "Detecting QGIS installation...",
+  "qgis_found": "QGIS found at: {path}",
+  "qgis_not_found": "No QGIS installation found. Please install QGIS first.",
+  "creating_venv": "Creating virtual environment at {path}...",
+  "venv_exists": "Virtual environment already exists at {path}, skipping creation.",
+  "installing_debugpy": "Installing debugpy into {target}...",
+  "writing_pth": "Linking QGIS Python bindings into the environment...",
+  "writing_vscode": "Writing VS Code configuration (.vscode/settings.json, launch.json)...",
+  "writing_pycharm": "Writing PyCharm remote-debug configuration (.idea/)...",
+  "done": "Setup complete. See docs/en/usage.md for next steps.",
+  "menu_start_bridge": "Start Debug Bridge",
+  "menu_stop_bridge": "Stop Debug Bridge",
+  "bridge_listening": "Debug bridge listening on {host}:{port}. Attach your IDE now.",
+  "bridge_stopped": "Debug bridge stopped.",
+  "bridge_already_running": "Debug bridge is already running."
+}

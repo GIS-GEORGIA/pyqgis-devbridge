@@ -1,0 +1,56 @@
+# Installation
+
+## 1. Standalone setup tool (CLI + GUI)
+
+Requires Python 3.9+ already on your PATH (any Python, not necessarily
+QGIS's bundled one — it only needs to be able to create a venv and run
+pip).
+
+```bash
+git clone https://github.com/GIS-GEORGIA/pyqgis-devbridge.git
+cd pyqgis-devbridge
+pip install -e .
+```
+
+Run it against a project folder:
+
+```bash
+devbridge setup --project-dir /path/to/your/plugin --lang en
+```
+
+Or launch the GUI:
+
+```bash
+devbridge gui
+```
+
+This will:
+1. Detect your QGIS installation (Windows: OSGeo4W / standalone installer
+   layouts; Linux: system `python3` with `import qgis` working, or common
+   static paths).
+2. Create a `--system-site-packages` virtual environment linked to QGIS's
+   Python bindings (`qgis.pth`), with the Windows DLL-directory shim
+   (`sitecustomize.py`) applied automatically where needed.
+3. Install `debugpy` into both QGIS's interpreter and the venv.
+4. Write `.vscode/settings.json` and `.vscode/launch.json` (an "Attach to
+   running QGIS" configuration).
+5. Write `.pycharm-debug/README.{en,ka}.md` with manual PyCharm steps
+   (see the note in that file for why this part isn't fully automated).
+
+## 2. QGIS plugin (DevBridge)
+
+Copy (or symlink during development) `qgis_plugin/` into your QGIS
+profile's plugin folder, named `DevBridge`:
+
+- Linux: `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/DevBridge`
+- Windows: `%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\DevBridge`
+
+Then enable it from **Plugins → Manage and Install Plugins → Installed**.
+
+A packaged `.zip` suitable for the QGIS Plugin Repository can be built
+with:
+
+```bash
+cd qgis_plugin
+zip -r ../DevBridge.zip . -x "__pycache__/*"
+```

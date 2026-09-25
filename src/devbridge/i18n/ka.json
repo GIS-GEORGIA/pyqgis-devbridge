@@ -1,0 +1,18 @@
+{
+  "welcome": "PyQGIS DevBridge — გარემოს ავტომატური მომზადება და ცოცხალი დებაგინგი",
+  "detecting_qgis": "QGIS ინსტალაციის მოძიება...",
+  "qgis_found": "QGIS ნაპოვნია: {path}",
+  "qgis_not_found": "QGIS ინსტალაცია ვერ მოიძებნა. ჯერ დააინსტალირეთ QGIS.",
+  "creating_venv": "იქმნება ვირტუალური გარემო: {path}...",
+  "venv_exists": "ვირტუალური გარემო უკვე არსებობს ({path}), გამოტოვება.",
+  "installing_debugpy": "debugpy-ს ინსტალაცია: {target}...",
+  "writing_pth": "QGIS-ის Python მოდულების დაკავშირება გარემოსთან...",
+  "writing_vscode": "VS Code კონფიგურაციის ჩაწერა (.vscode/settings.json, launch.json)...",
+  "writing_pycharm": "PyCharm დისტანციური დებაგინგის კონფიგურაციის ჩაწერა (.idea/)...",
+  "done": "მომზადება დასრულდა. შემდეგი ნაბიჯებისთვის იხილეთ docs/ka/usage.md.",
+  "menu_start_bridge": "დებაგ ხიდის გაშვება",
+  "menu_stop_bridge": "დებაგ ხიდის გაჩერება",
+  "bridge_listening": "დებაგ ხიდი უსმენს {host}:{port}-ზე. დააკავშირეთ IDE.",
+  "bridge_stopped": "დებაგ ხიდი გაჩერდა.",
+  "bridge_already_running": "დებაგ ხიდი უკვე გაშვებულია."
+}
