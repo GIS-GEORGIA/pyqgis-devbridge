@@ -48,8 +48,8 @@ VS Code-ში: **Run and Debug → PyQGIS: Attach to running QGIS**.
 
 ## Status
 
-Alpha / experimental. Windows + Linux supported; macOS not yet covered
-by the detectors (contributions welcome). See
+Alpha / experimental. Windows + Linux supported; macOS detection
+(official `QGIS*.app` bundle, Homebrew/conda) is implemented but untested on real hardware. See
 [`docs/en/architecture.md`](docs/en/architecture.md) for design notes,
 including what's deliberately *not* automated (PyCharm's version-pinned
 `pydevd-pycharm`, and stopping a `debugpy` listener mid-session).

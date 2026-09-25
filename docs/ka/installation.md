@@ -27,7 +27,8 @@ devbridge gui
 ეს ავტომატურად:
 1. მოძებნის QGIS ინსტალაციას (Windows: OSGeo4W / სტანდარტული
    ინსტალატორის სტრუქტურა; Linux: სისტემური `python3`, სადაც `import
-   qgis` მუშაობს, ან ცნობილი სტატიკური გზები).
+   qgis` მუშაობს, ან ცნობილი სტატიკური გზები; macOS: `/Applications/QGIS*.app`
+   ან ნებისმიერი `python3`, რომელსაც უკვე შეუძლია `import qgis`).
 2. შექმნის `--system-site-packages` ვირტუალურ გარემოს, დაკავშირებულს
    QGIS-ის Python მოდულებთან (`qgis.pth`), საჭიროების შემთხვევაში
    ავტომატურად დაამატებს Windows-ის DLL-directory შუალედურ ფაილს
@@ -45,6 +46,7 @@ devbridge gui
 თქვენს QGIS პროფილის plugins საქაღალდეში, სახელით `DevBridge`:
 
 - Linux: `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/DevBridge`
+- macOS: `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/DevBridge`
 - Windows: `%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\DevBridge`
 
 შემდეგ ჩართეთ **Plugins → Manage and Install Plugins → Installed**-დან.

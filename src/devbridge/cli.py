@@ -16,10 +16,9 @@ from pathlib import Path
 from . import env_builder, debugpy_installer, vscode_config, pycharm_config
 from .i18n_util import detect_system_lang, set_lang, t
 
-if platform.system() == "Windows":
-    from .detectors import windows as _detector
-else:
-    from .detectors import linux as _detector
+from .detectors import get_detector
+
+_detector = get_detector()
 
 
 def _venv_python(venv_path: Path) -> Path:

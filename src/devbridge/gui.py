@@ -12,10 +12,9 @@ from tkinter import filedialog, scrolledtext, ttk
 from . import debugpy_installer, env_builder, pycharm_config, vscode_config
 from .i18n_util import detect_system_lang, get_lang, set_lang, t
 
-if platform.system() == "Windows":
-    from .detectors import windows as _detector
-else:
-    from .detectors import linux as _detector
+from .detectors import get_detector
+
+_detector = get_detector()
 
 
 class DevBridgeApp(ttk.Frame):

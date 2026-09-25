@@ -27,7 +27,8 @@ devbridge gui
 This will:
 1. Detect your QGIS installation (Windows: OSGeo4W / standalone installer
    layouts; Linux: system `python3` with `import qgis` working, or common
-   static paths).
+   static paths; macOS: `/Applications/QGIS*.app` bundle, or any `python3`
+   that can already `import qgis`).
 2. Create a `--system-site-packages` virtual environment linked to QGIS's
    Python bindings (`qgis.pth`), with the Windows DLL-directory shim
    (`sitecustomize.py`) applied automatically where needed.
@@ -43,6 +44,7 @@ Copy (or symlink during development) `qgis_plugin/` into your QGIS
 profile's plugin folder, named `DevBridge`:
 
 - Linux: `~/.local/share/QGIS/QGIS3/profiles/default/python/plugins/DevBridge`
+- macOS: `~/Library/Application Support/QGIS/QGIS3/profiles/default/python/plugins/DevBridge`
 - Windows: `%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins\DevBridge`
 
 Then enable it from **Plugins → Manage and Install Plugins → Installed**.

@@ -38,6 +38,12 @@ def build_venv(qgis: QgisInstallation, venv_path: Path, verbose_print=print) -> 
 def _site_packages_dir(venv_path: Path) -> Path:
     if platform.system() == "Windows":
         return venv_path / "Lib" / "site-packages"
+    # The venv is created by the QGIS-bundled interpreter, whose minor version
+    # can differ from the one running devbridge (typical on macOS), so look at
+    # what the venv actually contains before falling back to our own version.
+    existing = sorted((venv_path / "lib").glob("python3*/site-packages"))
+    if existing:
+        return existing[-1]
     major, minor = sys.version_info[:2]
     return venv_path / "lib" / f"python{major}.{minor}" / "site-packages"
 
