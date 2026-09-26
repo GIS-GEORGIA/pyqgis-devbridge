@@ -12,10 +12,15 @@ cd pyqgis-devbridge
 pip install -e .
 ```
 
-გაუშვით პროექტის საქაღალდეზე:
+გაუშვით — plugin-ს ის თავად აიღებს თქვენი QGIS პროფილის `python/plugins`
+საქაღალდიდან (ცვლილებები QGIS-შიც მაშინვე ჩანს):
 
 ```bash
-devbridge setup --project-dir /path/to/your/plugin --lang ka
+devbridge plugins                      # რა plugin-ებია პროფილში
+devbridge setup                        # ერთი plugin-ის შემთხვევაში ავტომატურად,
+                                       # რამდენიმეს შემთხვევაში ნომრით ირჩევთ
+devbridge setup --plugin MyPlugin      # ან სახელით
+devbridge setup --project-dir /path/to/folder   # ნებისმიერი სხვა საქაღალდე
 ```
 
 ან გახსენით GUI:

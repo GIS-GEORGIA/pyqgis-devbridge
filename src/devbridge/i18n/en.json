@@ -14,5 +14,16 @@
   "menu_stop_bridge": "Stop Debug Bridge",
   "bridge_listening": "Debug bridge listening on {host}:{port}. Attach your IDE now.",
   "bridge_stopped": "Debug bridge stopped.",
-  "bridge_already_running": "Debug bridge is already running."
+  "bridge_already_running": "Debug bridge is already running.",
+  "scanning_profiles": "Looking for your plugins in the QGIS profile folder...",
+  "using_plugin": "Using plugin: {label} -> {path}",
+  "choose_plugin": "Which plugin should be set up?",
+  "choose_prompt": "Number (or Enter to cancel): ",
+  "no_profile_plugins": "No plugins found in your QGIS profile folder. Use --project-dir to point at a project.",
+  "plugin_not_found": "Plugin '{name}' not found in the QGIS profile. Available: {available}",
+  "multiple_plugins": "Several plugins found; choose one with --plugin NAME. Available: {available}",
+  "plugins_list_header": "Plugins in your QGIS profile:",
+  "gui_plugin_label": "Plugin from QGIS profile:",
+  "gui_project_label": "Project dir:",
+  "gui_refresh": "Refresh"
 }

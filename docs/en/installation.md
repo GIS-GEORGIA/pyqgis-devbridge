@@ -12,10 +12,14 @@ cd pyqgis-devbridge
 pip install -e .
 ```
 
-Run it against a project folder:
+Run it. It takes your plugin straight from your QGIS profile's
+`python/plugins` folder, so edits are live in QGIS too:
 
 ```bash
-devbridge setup --project-dir /path/to/your/plugin --lang en
+devbridge plugins                      # list plugins found in your profile
+devbridge setup                        # auto if there is one, numbered picker if several
+devbridge setup --plugin MyPlugin      # or pick by name
+devbridge setup --project-dir /path/to/folder   # any other folder instead
 ```
 
 Or launch the GUI:

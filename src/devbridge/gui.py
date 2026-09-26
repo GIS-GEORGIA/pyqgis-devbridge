@@ -9,7 +9,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, scrolledtext, ttk
 
-from . import debugpy_installer, env_builder, pycharm_config, vscode_config
+from . import debugpy_installer, env_builder, profiles, pycharm_config, vscode_config
 from .i18n_util import detect_system_lang, get_lang, set_lang, t
 
 from .detectors import get_detector
@@ -38,9 +38,18 @@ class DevBridgeApp(ttk.Frame):
         lang_box.pack(side="left", padx=4)
         lang_box.bind("<<ComboboxSelected>>", self._on_lang_change)
 
+        plug_row = ttk.Frame(self)
+        plug_row.pack(fill="x", pady=4)
+        ttk.Label(plug_row, text=t("gui_plugin_label")).pack(side="left")
+        self.plugin_box = ttk.Combobox(plug_row, state="readonly", width=34)
+        self.plugin_box.pack(side="left", padx=4)
+        self.plugin_box.bind("<<ComboboxSelected>>", self._on_plugin_pick)
+        ttk.Button(plug_row, text=t("gui_refresh"), command=self._load_plugins).pack(side="left")
+        self._load_plugins()
+
         row = ttk.Frame(self)
         row.pack(fill="x", pady=4)
-        ttk.Label(row, text="Project dir:").pack(side="left")
+        ttk.Label(row, text=t("gui_project_label")).pack(side="left")
         ttk.Entry(row, textvariable=self.project_dir, width=40).pack(side="left", padx=4)
         ttk.Button(row, text="...", width=3, command=self._browse).pack(side="left")
 
@@ -59,6 +68,18 @@ class DevBridgeApp(ttk.Frame):
         set_lang(self.lang.get())
         self.master.title(t("welcome"))
         self.run_btn.config(text=t("welcome"))
+
+    def _load_plugins(self) -> None:
+        self._plugins = profiles.find_plugins()
+        self.plugin_box["values"] = [p.label for p in self._plugins]
+        if self._plugins and not self.plugin_box.get():
+            self.plugin_box.current(0)
+            self._on_plugin_pick()
+
+    def _on_plugin_pick(self, _evt=None) -> None:
+        idx = self.plugin_box.current()
+        if idx >= 0:
+            self.project_dir.set(str(self._plugins[idx].path))
 
     def _browse(self) -> None:
         chosen = filedialog.askdirectory()

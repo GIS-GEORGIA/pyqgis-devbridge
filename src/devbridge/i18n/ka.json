@@ -14,5 +14,16 @@
   "menu_stop_bridge": "დებაგ ხიდის გაჩერება",
   "bridge_listening": "დებაგ ხიდი უსმენს {host}:{port}-ზე. დააკავშირეთ IDE.",
   "bridge_stopped": "დებაგ ხიდი გაჩერდა.",
-  "bridge_already_running": "დებაგ ხიდი უკვე გაშვებულია."
+  "bridge_already_running": "დებაგ ხიდი უკვე გაშვებულია.",
+  "scanning_profiles": "თქვენი plugin-ების ძიება QGIS-ის პროფილის საქაღალდეში...",
+  "using_plugin": "გამოიყენება plugin: {label} -> {path}",
+  "choose_plugin": "რომელი plugin მოვამზადოთ?",
+  "choose_prompt": "ნომერი (ან Enter გასაუქმებლად): ",
+  "no_profile_plugins": "QGIS-ის პროფილის საქაღალდეში plugin-ები ვერ მოიძებნა. გამოიყენეთ --project-dir პროექტის მისათითებლად.",
+  "plugin_not_found": "Plugin '{name}' QGIS-ის პროფილში ვერ მოიძებნა. ხელმისაწვდომია: {available}",
+  "multiple_plugins": "ნაპოვნია რამდენიმე plugin; აირჩიეთ ერთი --plugin NAME-ით. ხელმისაწვდომია: {available}",
+  "plugins_list_header": "Plugin-ები თქვენს QGIS პროფილში:",
+  "gui_plugin_label": "Plugin QGIS პროფილიდან:",
+  "gui_project_label": "პროექტის საქაღალდე:",
+  "gui_refresh": "განახლება"
 }
