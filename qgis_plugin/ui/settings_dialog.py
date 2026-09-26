@@ -24,10 +24,10 @@ class SettingsDialog(QDialog):
         form.addRow(t("settings_port_label"), self.port_spin)
 
         buttons = QDialogButtonBox(
-            QDialogButtonBox.Save | QDialogButtonBox.Cancel
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
         )
-        buttons.button(QDialogButtonBox.Save).setText(t("settings_save"))
-        buttons.button(QDialogButtonBox.Cancel).setText(t("settings_cancel"))
+        buttons.button(QDialogButtonBox.StandardButton.Save).setText(t("settings_save"))
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(t("settings_cancel"))
         buttons.accepted.connect(self._on_save)
         buttons.rejected.connect(self.reject)
 

@@ -5,12 +5,12 @@ Windows or Linux, following the community-standard recipe (OSGeo4W
 from __future__ import annotations
 
 import platform
-import subprocess
 import sys
 from pathlib import Path
 
 from .detectors.base import QgisInstallation
 from .i18n_util import t
+from .proc import run_logged
 
 
 def build_venv(qgis: QgisInstallation, venv_path: Path, verbose_print=print) -> Path:
@@ -20,10 +20,7 @@ def build_venv(qgis: QgisInstallation, venv_path: Path, verbose_print=print) -> 
     else:
         verbose_print(t("creating_venv", path=venv_path))
         python_exe = str(qgis.python_exe)
-        subprocess.run(
-            [python_exe, "-m", "venv", "--system-site-packages", str(venv_path)],
-            check=True,
-        )
+        run_logged([python_exe, "-m", "venv", "--system-site-packages", str(venv_path)], verbose_print)
 
     verbose_print(t("writing_pth"))
     _link_qgis_python(qgis, venv_path)

@@ -15,15 +15,20 @@ import subprocess
 from pathlib import Path
 
 from . import profiles
+from .i18n_util import t
 
 PLUGIN_NAME = "DevBridge"
 
 
 def plugin_source() -> Path | None:
-    """``qgis_plugin/`` next to ``src/`` — only present in a repo clone
-    (editable install), not in a wheel."""
-    candidate = Path(__file__).resolve().parents[2] / "qgis_plugin"
-    return candidate if (candidate / "metadata.txt").exists() else None
+    """The DevBridge plugin folder: ``qgis_plugin/`` in a repo clone
+    (editable install), or the plugin itself when this package is the copy
+    bundled in ``<plugin>/tool/devbridge``. Not available from a wheel."""
+    top = Path(__file__).resolve().parents[2]
+    for candidate in (top / "qgis_plugin", top):
+        if (candidate / "metadata.txt").exists() and (candidate / "plugin.py").exists():
+            return candidate
+    return None
 
 
 def profile_dirs(profile: str | None = None) -> list[Path]:
@@ -120,6 +125,43 @@ def find_ini(profile_dir: Path) -> Path | None:
         if ini.exists():
             return ini
     return None
+
+
+def install_into_profiles(profile: str | None = None, copy: bool = False, force: bool = False,
+                          log=print) -> int:
+    """Install + enable DevBridge in each matching QGIS profile. Returns a
+    process-style exit code (0 = everything fine)."""
+    source = plugin_source()
+    if source is None:
+        log(t("bridge_source_missing"))
+        return 1
+    targets = profile_dirs(profile)
+    if not targets:
+        log(t("bridge_no_profile"))
+        return 1
+
+    status = 0
+    running = qgis_running()
+    for prof in targets:
+        plugins_dir = prof / "python" / "plugins"
+        result = install(source, plugins_dir, copy=copy, force=force)
+        target = plugins_dir / PLUGIN_NAME
+        if result == "exists":
+            log(t("bridge_exists", target=target))
+            status = 1
+            continue
+        log(t(f"bridge_{result}", target=target))
+
+        ini = find_ini(prof)
+        if ini is None:
+            log(t("bridge_enable_no_ini", profile=prof))
+        elif running:
+            log(t("bridge_enable_skipped_running"))
+        else:
+            set_plugin_enabled(ini)
+            log(t("bridge_enabled"))
+    log(t("bridge_restart_hint"))
+    return status
 
 
 def qgis_running() -> bool:

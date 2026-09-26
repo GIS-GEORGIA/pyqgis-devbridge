@@ -19,3 +19,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
       - run: pytest -v
+      - run: python make_plugin_zip.py
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        with:
+          name: DevBridge-plugin-zip
+          path: dist/DevBridge.zip

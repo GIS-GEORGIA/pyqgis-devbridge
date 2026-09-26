@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 ### Added
+- **DevBridge Control Panel** in QGIS (Plugins > DevBridge > Control Panel + toolbar button): tabs for the
+  VS Code bridge, PyCharm bridge, "prepare a plugin" (runs the setup in a worker thread with a live log,
+  Open folder / Open in VS Code) and the desktop tool; EN/KA switch; the menu relabels with it.
+- Standalone desktop tool bundled in the plugin zip under `tool/` (`python -m devbridge gui`, or double-click
+  `devbridge_gui.pyw`), launchable from the panel; GUI now edits the shared settings and can open the folder
+  / VS Code and install the plugin. Shared JSON settings file (`devbridge.config` / `qgis_plugin/shared_config.py`).
+- `make_plugin_zip.py` builds the reproducible `DevBridge.zip` for plugins.qgis.ge; `tools/qgis_headless_check.py`
+  loads it in a real QGIS 3.44 / 4.2 and drives the panel.
+- Plugin metadata: QGIS 3.40 - 4.99 universal build (`supportsQt6`), all Qt code uses scoped enums / `exec()`.
 - One-shot scripts (`scripts/install.ps1`, `install.cmd`, `install.sh`): install the CLI,
   link + enable the DevBridge plugin in your QGIS profile, then set up a profile plugin.
 - `devbridge install-plugin` (`--profile`, `--copy`, `--force`): links (junction/symlink)
@@ -21,6 +30,10 @@
   PyCharm Bridge" plugin menu action. Manual `.pycharm-debug/` steps
   remain as the documented fallback for setups it can't detect.
 ### Fixed
+- Child processes (venv, pip) now stream their output to the log (visible inside QGIS / the GUI) instead of
+  vanishing, do not flash a console window on Windows, and pip retries with `--user` when the QGIS Python lives
+  in a read-only folder such as `C:\Program Files\QGIS 3.44.5`.
+- Windows detector finds any `Program Files\QGIS x.y.z` standalone install, not just 3.34/3.28.
 - CLI no longer crashes printing Georgian on legacy (cp1252) Windows consoles.
 - venv `site-packages` lookup no longer assumes the host Python's minor
   version matches the QGIS-bundled interpreter that created the venv.

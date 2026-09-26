@@ -28,7 +28,23 @@ def test_windows_detector_finds_osgeo4w_layout(tmp_path: Path, monkeypatch):
 def test_windows_detector_returns_none_when_nothing_found(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(win_detector, "_CANDIDATE_ROOTS", [str(tmp_path / "nope")])
     monkeypatch.setattr(win_detector, "_env_root", lambda: None)
+    monkeypatch.setattr(win_detector, "_program_files_roots", lambda: [])
     assert win_detector.find_qgis() is None
+
+
+def test_windows_detector_finds_versioned_standalone_install(tmp_path: Path, monkeypatch):
+    """Standalone installer: <ProgramFiles>\QGIS 3.44.5 with apps\qgis-ltr + Python3xx."""
+    for var in ("ProgramFiles", "ProgramW6432"):
+        monkeypatch.setenv(var, str(tmp_path))
+    root = tmp_path / "QGIS 3.44.5"
+    (root / "apps" / "qgis-ltr" / "python" / "qgis").mkdir(parents=True)
+    (root / "apps" / "Python312").mkdir(parents=True)
+    (root / "apps" / "Python312" / "python.exe").write_text("")
+    monkeypatch.setattr(win_detector, "_CANDIDATE_ROOTS", [])
+    monkeypatch.setattr(win_detector, "_env_root", lambda: None)
+
+    result = win_detector.find_qgis()
+    assert result is not None and result.root == root
 
 
 from devbridge.detectors import macos as mac_detector  # noqa: E402

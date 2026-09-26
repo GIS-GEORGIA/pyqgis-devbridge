@@ -14,22 +14,15 @@
 from __future__ import annotations
 
 import argparse
-import platform
 import sys
 from pathlib import Path
 
-from . import bridge_plugin, env_builder, debugpy_installer, profiles, vscode_config, pycharm_config
+from . import bridge_plugin, config, pipeline, profiles, vscode_config
 from .i18n_util import detect_system_lang, set_lang, t
 
 from .detectors import get_detector
 
 _detector = get_detector()
-
-
-def _venv_python(venv_path: Path) -> Path:
-    if platform.system() == "Windows":
-        return venv_path / "Scripts" / "python.exe"
-    return venv_path / "bin" / "python"
 
 
 def cmd_detect(args: argparse.Namespace) -> int:
@@ -86,37 +79,8 @@ def cmd_plugins(args: argparse.Namespace) -> int:
 
 
 def cmd_install_plugin(args: argparse.Namespace) -> int:
-    source = bridge_plugin.plugin_source()
-    if source is None:
-        print(t("bridge_source_missing"))
-        return 1
-    targets = bridge_plugin.profile_dirs(args.profile)
-    if not targets:
-        print(t("bridge_no_profile"))
-        return 1
-
-    status = 0
-    running = bridge_plugin.qgis_running()
-    for prof in targets:
-        plugins_dir = prof / "python" / "plugins"
-        result = bridge_plugin.install(source, plugins_dir, copy=args.copy, force=args.force)
-        target = plugins_dir / bridge_plugin.PLUGIN_NAME
-        if result == "exists":
-            print(t("bridge_exists", target=target))
-            status = 1
-            continue
-        print(t(f"bridge_{result}", target=target))
-
-        ini = bridge_plugin.find_ini(prof)
-        if ini is None:
-            print(t("bridge_enable_no_ini", profile=prof))
-        elif running:
-            print(t("bridge_enable_skipped_running"))
-        else:
-            bridge_plugin.set_plugin_enabled(ini)
-            print(t("bridge_enabled"))
-    print(t("bridge_restart_hint"))
-    return status
+    return bridge_plugin.install_into_profiles(
+        profile=args.profile, copy=args.copy, force=args.force)
 
 
 def cmd_setup(args: argparse.Namespace) -> int:
@@ -124,21 +88,11 @@ def cmd_setup(args: argparse.Namespace) -> int:
     if project_dir is None:
         return 1
 
-    print(t("detecting_qgis"))
-    qgis = _detector.find_qgis()
-    if not qgis:
-        print(t("qgis_not_found"))
+    try:
+        pipeline.run_setup(project_dir, port=args.port, venv_name=args.venv_name)
+    except pipeline.SetupError as err:
+        print(err)
         return 1
-    print(t("qgis_found", path=qgis.root))
-
-    venv_path = project_dir / args.venv_name
-
-    env_builder.build_venv(qgis, venv_path)
-    debugpy_installer.install_debugpy(qgis, venv_python=_venv_python(venv_path))
-    vscode_config.write_vscode_config(project_dir, venv_path, port=args.port)
-    pycharm_config.write_pycharm_notes(project_dir)
-
-    print(t("done"))
     return 0
 
 
@@ -160,8 +114,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_setup.add_argument("--profile", default=None,
                           help="QGIS profile name (default: any, 'default' first)")
     p_setup.add_argument("--venv-name", default=".venv", help="Venv folder name")
-    p_setup.add_argument("--port", type=int, default=vscode_config.DEFAULT_PORT,
-                          help="debugpy attach port")
+    p_setup.add_argument("--port", type=int, default=config.load()["port"],
+                          help="debugpy attach port (default: from the shared DevBridge settings)")
     p_setup.set_defaults(func=cmd_setup)
 
     p_plugins = sub.add_parser("plugins", help="List plugins found in your QGIS profile")
@@ -195,7 +149,7 @@ def main(argv: list[str] | None = None) -> int:
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(errors="replace")
-    set_lang(detect_system_lang())
+    set_lang(config.load()["lang"] or detect_system_lang())
 
     # allow --lang to be parsed before we know the subcommand, for
     # localized --help text too

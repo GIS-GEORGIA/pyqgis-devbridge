@@ -42,6 +42,10 @@ def set_lang(lang: str) -> None:
     _current_lang = lang if lang in _SUPPORTED else "en"
 
 
+def get_lang() -> str:
+    return _current_lang
+
+
 def t(key: str, **kwargs) -> str:
     strings = _load(_current_lang)
     template = strings.get(key) or _load("en").get(key, key)

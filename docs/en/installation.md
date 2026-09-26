@@ -1,6 +1,15 @@
 # Installation
 
-## Quick start (everything automated)
+## From plugins.qgis.ge (no clone, no command line)
+
+1. QGIS → Plugins → Manage and Install Plugins → Settings → Add →
+   `https://plugins.qgis.ge/plugins.xml`.
+2. Install **DevBridge** (tick "Show also experimental plugins" if it is not listed).
+3. Plugins → DevBridge → **Control Panel**. Everything below is a button there.
+   The standalone desktop tool lives in the plugin's `tool/` folder (button:
+   *Open tool folder*); *Launch desktop tool* starts it right away.
+
+## Quick start (everything automated, from a repo clone)
 
 Windows (PowerShell or double-click / cmd):
 

@@ -23,12 +23,24 @@ def _env_root() -> str | None:
     return os.environ.get("OSGEO4W_ROOT")
 
 
+def _program_files_roots() -> list[str]:
+    """Standalone-installer folders such as "QGIS 3.44.5", newest first."""
+    found: list[Path] = []
+    for var in ("ProgramFiles", "ProgramW6432"):
+        base = os.environ.get(var)
+        if base:
+            found.extend(p for p in Path(base).glob("QGIS *") if p.is_dir())
+    unique = sorted({str(p) for p in found}, reverse=True)
+    return unique
+
+
 def find_qgis() -> QgisInstallation | None:
     roots = []
     env_root = _env_root()
     if env_root:
         roots.append(env_root)
     roots.extend(_CANDIDATE_ROOTS)
+    roots.extend(_program_files_roots())
 
     for root_str in roots:
         root = Path(root_str)

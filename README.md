@@ -4,6 +4,12 @@
 debugging bridge for VS Code, with a documented PyCharm path.**
 Bilingual (English / ქართული).
 
+**Easiest way in:** in QGIS add the repository `https://plugins.qgis.ge/plugins.xml`
+(Plugins → Manage and Install Plugins → Settings → Add), install **DevBridge**, then open
+**Plugins → DevBridge → Control Panel**: start/stop the VS Code and PyCharm bridges, pick one of your
+plugins and prepare it for debugging, all with buttons and in English or Georgian. The panel also
+launches (or opens the folder of) a standalone desktop tool that does the same without QGIS running.
+
 Two halves, one protocol:
 
 | Piece | What it is | Where |
@@ -42,13 +48,20 @@ devbridge setup --project-dir /path/to/plugin --lang ka
 შემდეგ QGIS-ში: **Plugins → DevBridge → დებაგ ხიდის გაშვება (VS Code)**,
 VS Code-ში: **Run and Debug → PyQGIS: Attach to running QGIS**.
 
+**ყველაზე მარტივი გზა:** QGIS-ში დაამატეთ რეპოზიტორია `https://plugins.qgis.ge/plugins.xml`
+(Plugins → Manage and Install Plugins → Settings → Add), დააყენეთ **DevBridge** და გახსენით
+**Plugins → DevBridge → მართვის პანელი**: VS Code-ისა და PyCharm-ის ხიდების გაშვება/გაჩერება,
+თქვენი დანამატის არჩევა და დებაგისთვის მომზადება — ყველაფერი ღილაკებით, ინგლისურად ან ქართულად.
+პანელიდან შეგიძლიათ გახსნათ (ან მისი საქაღალდე გახსნათ) ცალკე დესკტოპ ხელსაწყო, რომელიც იგივეს
+აკეთებს QGIS-ის გაშვების გარეშე.
+
 სრული დოკუმენტაცია: [`docs/ka/`](docs/ka/installation.md) · [`docs/en/`](docs/en/installation.md)
 
 ---
 
 ## Status
 
-Alpha / experimental. Windows + Linux supported; macOS detection
+Alpha / experimental. Runs on QGIS 3.40+ (Qt5) and QGIS 4 (Qt6) from one build. Windows + Linux supported; macOS detection
 (official `QGIS*.app` bundle, Homebrew/conda) is implemented but untested on real hardware. See
 [`docs/en/architecture.md`](docs/en/architecture.md) for design notes,
 including what's deliberately *not* automated (PyCharm's version-pinned
