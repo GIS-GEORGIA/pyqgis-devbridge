@@ -1,5 +1,31 @@
 # Installation
 
+## Quick start (everything automated)
+
+Windows (PowerShell or double-click / cmd):
+
+```powershell
+scripts\install.cmd                          # pick the plugin from a list
+scripts\install.cmd -Plugin selection_tools  # or by name
+scripts\install.cmd -Lang ka -Force          # Georgian UI; replace an old DevBridge copy
+```
+
+Linux / macOS:
+
+```bash
+scripts/install.sh                            # pick the plugin from a list
+scripts/install.sh --plugin selection_tools
+```
+
+This installs the CLI, links the DevBridge plugin into your QGIS profile
+and enables it, then prepares the chosen plugin (venv, debugpy, VS Code
+config). Afterwards restart QGIS. Re-running is safe. Useful switches:
+`-SkipBridge` / `-SkipSetup` (`--skip-bridge` / `--skip-setup`),
+`-ProjectDir` (`--project-dir`) for any folder, `-Copy` to copy instead of
+link. If QGIS is running, its settings file is left alone: tick DevBridge in
+the Plugin Manager or close QGIS and re-run. The manual steps below do the
+same thing one at a time.
+
 ## 1. Standalone setup tool (CLI + GUI)
 
 Requires Python 3.9+ already on your PATH (any Python, not necessarily

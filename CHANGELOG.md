@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 ### Added
+- One-shot scripts (`scripts/install.ps1`, `install.cmd`, `install.sh`): install the CLI,
+  link + enable the DevBridge plugin in your QGIS profile, then set up a profile plugin.
+- `devbridge install-plugin` (`--profile`, `--copy`, `--force`): links (junction/symlink)
+  `qgis_plugin/` into the profile and sets `DevBridge=true` in the QGIS settings file
+  unless QGIS is running.
 - `devbridge setup` now takes the plugin from your QGIS profile folder by default
   (`--plugin NAME`, `--profile NAME`; numbered picker when several); new
   `devbridge plugins` command; plugin dropdown in the GUI. `--project-dir`

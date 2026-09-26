@@ -25,5 +25,15 @@
   "plugins_list_header": "Plugin-ები თქვენს QGIS პროფილში:",
   "gui_plugin_label": "Plugin QGIS პროფილიდან:",
   "gui_project_label": "პროექტის საქაღალდე:",
-  "gui_refresh": "განახლება"
+  "gui_refresh": "განახლება",
+  "bridge_source_missing": "qgis_plugin/ ვერ მოიძებნა. დააინსტალირეთ devbridge რეპოს ასლიდან (pip install -e .).",
+  "bridge_no_profile": "QGIS-ის პროფილი ვერ მოიძებნა. ერთხელ გახსენით QGIS, რომ შეიქმნას, და გაიმეორეთ.",
+  "bridge_linked": "DevBridge plugin დაკავშირებულია: {target}",
+  "bridge_copied": "DevBridge plugin დაკოპირებულია: {target}",
+  "bridge_already": "DevBridge plugin უკვე დაინსტალირებულია: {target}",
+  "bridge_exists": "{target} უკვე არსებობს და სხვა რამეა. ჩასანაცვლებლად გაიმეორეთ --force-ით.",
+  "bridge_enabled": "DevBridge ჩაირთო QGIS-ის პარამეტრებში.",
+  "bridge_enable_no_ini": "{profile}-ში QGIS-ის პარამეტრების ფაილი ჯერ არ არის - ერთხელ ჩართეთ DevBridge Plugins > Manage and Install Plugins-ში.",
+  "bridge_enable_skipped_running": "QGIS გაშვებულია, ამიტომ მისი პარამეტრები არ შეცვლილა. დახურეთ QGIS და გაიმეორეთ, ან ჩართეთ DevBridge Plugins > Manage and Install Plugins-ში.",
+  "bridge_restart_hint": "გადატვირთეთ QGIS და გამოიყენეთ Plugins > DevBridge > დებაგ ხიდის გაშვება."
 }

@@ -6,6 +6,7 @@
     devbridge setup --plugin MyPlugin      # pick the plugin by name
     devbridge setup --project-dir .        # or work on any folder instead
     devbridge plugins         # list plugins found in your QGIS profile
+    devbridge install-plugin  # put the DevBridge QGIS plugin into your profile and enable it
     devbridge detect          # just print what was found
     devbridge --lang ka setup
     devbridge gui             # launch the Tk GUI instead
@@ -17,7 +18,7 @@ import platform
 import sys
 from pathlib import Path
 
-from . import env_builder, debugpy_installer, profiles, vscode_config, pycharm_config
+from . import bridge_plugin, env_builder, debugpy_installer, profiles, vscode_config, pycharm_config
 from .i18n_util import detect_system_lang, set_lang, t
 
 from .detectors import get_detector
@@ -84,6 +85,40 @@ def cmd_plugins(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_install_plugin(args: argparse.Namespace) -> int:
+    source = bridge_plugin.plugin_source()
+    if source is None:
+        print(t("bridge_source_missing"))
+        return 1
+    targets = bridge_plugin.profile_dirs(args.profile)
+    if not targets:
+        print(t("bridge_no_profile"))
+        return 1
+
+    status = 0
+    running = bridge_plugin.qgis_running()
+    for prof in targets:
+        plugins_dir = prof / "python" / "plugins"
+        result = bridge_plugin.install(source, plugins_dir, copy=args.copy, force=args.force)
+        target = plugins_dir / bridge_plugin.PLUGIN_NAME
+        if result == "exists":
+            print(t("bridge_exists", target=target))
+            status = 1
+            continue
+        print(t(f"bridge_{result}", target=target))
+
+        ini = bridge_plugin.find_ini(prof)
+        if ini is None:
+            print(t("bridge_enable_no_ini", profile=prof))
+        elif running:
+            print(t("bridge_enable_skipped_running"))
+        else:
+            bridge_plugin.set_plugin_enabled(ini)
+            print(t("bridge_enabled"))
+    print(t("bridge_restart_hint"))
+    return status
+
+
 def cmd_setup(args: argparse.Namespace) -> int:
     project_dir = _resolve_project_dir(args)
     if project_dir is None:
@@ -132,6 +167,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_plugins = sub.add_parser("plugins", help="List plugins found in your QGIS profile")
     p_plugins.add_argument("--profile", default=None, help="QGIS profile name")
     p_plugins.set_defaults(func=cmd_plugins)
+
+    p_bridge = sub.add_parser("install-plugin",
+                              help="Install the DevBridge QGIS plugin into your profile and enable it")
+    p_bridge.add_argument("--profile", default=None, help="QGIS profile name (default: 'default')")
+    p_bridge.add_argument("--copy", action="store_true",
+                           help="Copy instead of linking (edits in the repo won't show up in QGIS)")
+    p_bridge.add_argument("--force", action="store_true",
+                           help="Replace an existing DevBridge folder in the profile")
+    p_bridge.set_defaults(func=cmd_install_plugin)
 
     p_gui = sub.add_parser("gui", help="Launch the graphical interface")
     p_gui.set_defaults(func=lambda a: _launch_gui())

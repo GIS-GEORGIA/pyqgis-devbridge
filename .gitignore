@@ -10,3 +10,4 @@ dist/
 .pycharm-debug/
 *.zip
 .pytest_cache/
+.bootstrap-venv/

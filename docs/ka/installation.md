@@ -1,5 +1,32 @@
 # ინსტალაცია
 
+## სწრაფი დაწყება (ყველაფერი ავტომატურად)
+
+Windows (PowerShell, ან ორმაგი დაწკაპუნება / cmd):
+
+```powershell
+scripts\install.cmd                          # plugin-ს სიიდან აირჩევთ
+scripts\install.cmd -Plugin selection_tools  # ან სახელით
+scripts\install.cmd -Lang ka -Force          # ქართული ინტერფეისი; DevBridge-ის ძველი ასლის ჩანაცვლება
+```
+
+Linux / macOS:
+
+```bash
+scripts/install.sh                            # plugin-ს სიიდან აირჩევთ
+scripts/install.sh --plugin selection_tools
+```
+
+ეს დააინსტალირებს CLI-ს, DevBridge plugin-ს მიაბამს თქვენს QGIS
+პროფილს და ჩართავს, შემდეგ კი მომზადებს არჩეულ plugin-ს (venv, debugpy,
+VS Code-ის კონფიგურაცია). ბოლოს გადატვირთეთ QGIS. განმეორებით გაშვება
+უსაფრთხოა. სასარგებლო გადამრთველები: `-SkipBridge` / `-SkipSetup`
+(`--skip-bridge` / `--skip-setup`), `-ProjectDir` (`--project-dir`)
+ნებისმიერი საქაღალდისთვის, `-Copy` მიბმის ნაცვლად დასაკოპირებლად. თუ QGIS
+გაშვებულია, მისი პარამეტრების ფაილს არ ვეხებით: ჩართეთ DevBridge Plugin
+Manager-ში ან დახურეთ QGIS და გაიმეორეთ. ქვემოთ იგივე ნაბიჯებია ხელით,
+სათითაოდ.
+
 ## 1. დამოუკიდებელი setup ინსტრუმენტი (CLI + GUI)
 
 საჭიროა Python 3.9+ თქვენს PATH-ში (ნებისმიერი Python — არა აუცილებლად

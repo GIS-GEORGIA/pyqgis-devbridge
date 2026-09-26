@@ -25,5 +25,15 @@
   "plugins_list_header": "Plugins in your QGIS profile:",
   "gui_plugin_label": "Plugin from QGIS profile:",
   "gui_project_label": "Project dir:",
-  "gui_refresh": "Refresh"
+  "gui_refresh": "Refresh",
+  "bridge_source_missing": "Can't find qgis_plugin/. Install devbridge from a repo clone (pip install -e .).",
+  "bridge_no_profile": "No QGIS profile found. Start QGIS once so it creates one, then re-run.",
+  "bridge_linked": "DevBridge plugin linked: {target}",
+  "bridge_copied": "DevBridge plugin copied: {target}",
+  "bridge_already": "DevBridge plugin already installed: {target}",
+  "bridge_exists": "{target} already exists and is something else. Re-run with --force to replace it.",
+  "bridge_enabled": "DevBridge enabled in QGIS settings.",
+  "bridge_enable_no_ini": "No QGIS settings file in {profile} yet - enable DevBridge once in Plugins > Manage and Install Plugins.",
+  "bridge_enable_skipped_running": "QGIS is running, so its settings were not touched. Close QGIS and re-run, or tick DevBridge in Plugins > Manage and Install Plugins.",
+  "bridge_restart_hint": "Restart QGIS, then use Plugins > DevBridge > Start debug bridge."
 }
