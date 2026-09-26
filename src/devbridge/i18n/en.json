@@ -55,5 +55,8 @@
   "gui_bridge_unavailable": "(only available when run from a repo clone or from the plugin itself)",
   "gui_browse_title": "Choose a plugin or project folder",
   "gui_bad_port": "Ports must be whole numbers.",
-  "pip_retry_user": "That Python's folder is read-only for your account; retrying with 'pip install --user'..."
+  "pip_retry_user": "That Python's folder is read-only for your account; retrying with 'pip install --user'...",
+  "gui_guide_title": "How to use",
+  "gui_guide_btn": "How to use",
+  "gui_guide_text": "1. Project: pick your plugin in the list (or press \"...\" for any folder).\n2. Press \"Prepare for debugging\" and wait until the log says \"Setup complete\".\n   (Creates a .venv, installs debugpy, writes the VS Code settings. Once per plugin.)\n3. Press \"Open in VS Code\".\n4. In QGIS: Plugins > DevBridge > Control Panel > \"VS Code\" > \"Start Debug Bridge (VS Code)\".\n   (If DevBridge is not in QGIS yet: press \"Install / enable in my QGIS profile\" here, then restart QGIS.)\n5. In VS Code: Ctrl+Shift+D > \"PyQGIS: Attach to running QGIS\" > green triangle.\n6. Set a breakpoint (click left of a line number) and use your plugin in QGIS. QGIS pauses on that line.\n\nFor PyCharm: start a \"Python Debug Server\" run configuration in PyCharm first (port from the settings above), then in QGIS use Control Panel > \"PyCharm\" > \"Auto-configure & Start PyCharm Bridge\".\n\nSettings here (language, ports) are shared with the QGIS plugin. Press \"Save settings\" to store them."
 }

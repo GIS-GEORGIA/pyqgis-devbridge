@@ -5,11 +5,12 @@ qgisMaximumVersion=4.99
 supportsQt6=True
 description=Live PyQGIS debugging from QGIS: control panel with buttons for the VS Code (debugpy) and PyCharm bridges, one-click "prepare my plugin for debugging", and a bundled standalone desktop tool. Bilingual EN/KA.
 description[ka]=PyQGIS-ის ცოცხალი დებაგინგი QGIS-იდან: მართვის პანელი ღილაკებით VS Code-ისა (debugpy) და PyCharm-ის ხიდებისთვის, დანამატის დებაგისთვის მომზადება ერთი დაჭერით და ჩაშენებული დამოუკიდებელი დესკტოპ ხელსაწყო. ორენოვანი EN/KA.
-version=0.2.0
+version=0.2.1
 author=GIS GEORGIA | Giorgi Kapanadze
 email=kapan.gio777@gmail.com
 about=DevBridge starts a debugpy server inside a running QGIS session so Visual Studio Code can attach and set breakpoints in plugin code or console scripts, without restarting QGIS; for PyCharm it detects your build, installs the matching pydevd-pycharm and connects. The Control Panel (Plugins > DevBridge) does everything with buttons, in English or Georgian: start/stop the bridges, pick one of your plugins and prepare it (a .venv that can import qgis, debugpy, VS Code launch configuration), open it in the file manager or VS Code. The same operations are also available as a separate desktop program bundled in the plugin's tool folder (launch it or open its folder from the panel); both share one settings file. Requires no extra Python packages except debugpy, which the preparation step installs.
-changelog=0.2.0 - Control Panel with tabs for VS Code, PyCharm, plugin preparation and the desktop tool; language switch EN/KA; standalone desktop tool bundled in the plugin (tool/), launchable from the panel; shared settings file; universal build for QGIS 3.40+ (Qt5) and QGIS 4 (Qt6).
+changelog=0.2.1 - PyCharm: pydevd-pycharm is now installed into DevBridge's own folder with QGIS's real Python (it used to call the QGIS program itself), in a background thread with a live log; refuses to connect unless PyCharm is listening (a failed connect could crash QGIS); one debugger per QGIS session (VS Code or PyCharm) with a clear message. New "How to use" tab with step-by-step instructions (EN/KA), also in the desktop tool.
+    0.2.0 - Control Panel with tabs for VS Code, PyCharm, plugin preparation and the desktop tool; language switch EN/KA; standalone desktop tool bundled in the plugin (tool/), launchable from the panel; shared settings file; universal build for QGIS 3.40+ (Qt5) and QGIS 4 (Qt6).
     0.1.0 - First version: debugpy bridge menu and PyCharm auto-configuration.
 tracker=https://github.com/GIS-GEORGIA/pyqgis-devbridge/issues
 repository=https://github.com/GIS-GEORGIA/pyqgis-devbridge

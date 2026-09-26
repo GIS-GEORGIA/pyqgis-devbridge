@@ -15,7 +15,15 @@ DEFAULT_PORT = 5678
 
 
 class DebugBridgeError(RuntimeError):
-    pass
+    """`str(exc)` is one of: already_running, debugpy_missing, other_debugger_loaded, not_running."""
+
+
+def _active_backend() -> str | None:
+    try:
+        from .debugger_state import active_backend
+    except ImportError:                      # imported as a top-level module
+        from debugger_state import active_backend
+    return active_backend()
 
 
 class DebugBridge:
@@ -31,6 +39,8 @@ class DebugBridge:
     def start(self, wait_for_client: bool = False) -> None:
         if self._running:
             raise DebugBridgeError("already_running")
+        if _active_backend() == "pycharm":
+            raise DebugBridgeError("other_debugger_loaded")
         try:
             import debugpy
         except ImportError as exc:
@@ -39,7 +49,10 @@ class DebugBridge:
         # debugpy.listen() is idempotent-safe to call once per process;
         # QGIS plugin reload during development can call start() again,
         # so we track our own flag rather than relying on debugpy's state.
-        debugpy.listen((self.host, self.port))
+        try:
+            debugpy.listen((self.host, self.port))
+        except ImportError as exc:            # a foreign pydevd got in first
+            raise DebugBridgeError("other_debugger_loaded") from exc
         if wait_for_client:
             debugpy.wait_for_client()
         self._running = True

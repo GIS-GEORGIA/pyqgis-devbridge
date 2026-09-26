@@ -43,9 +43,10 @@ class DevBridgePlugin:
 
     def unload(self) -> None:
         if self._panel is not None:
-            worker = getattr(self._panel, "_worker", None)
-            if worker is not None:
-                worker.wait(5000)      # don't destroy a running setup thread
+            for name in ("_worker", "_py_worker"):
+                worker = getattr(self._panel, name, None)
+                if worker is not None:
+                    worker.wait(5000)      # don't destroy a running background thread
             self._panel.close()
             self._panel.deleteLater()
             self._panel = None
@@ -94,9 +95,13 @@ class DevBridgePlugin:
         try:
             self.bridge.start()
         except DebugBridgeError as exc:
-            key = str(exc) if str(exc) in ("already_running", "debugpy_missing") else "debugpy_missing"
-            msg = t(f"bridge_{key}" if key == "already_running" else key,
-                    port=self.bridge.port)
+            key = str(exc)
+            if key == "already_running":
+                msg = t("bridge_already_running", port=self.bridge.port)
+            elif key == "other_debugger_loaded":
+                msg = t("debugger_conflict")
+            else:
+                msg = t("debugpy_missing")
             self.iface.messageBar().pushMessage("DevBridge", msg, level=Qgis.MessageLevel.Warning)
             return
         msg = t("bridge_listening", host=self.bridge.host, port=self.bridge.port)
@@ -122,17 +127,23 @@ class DevBridgePlugin:
         try:
             installation = self.pycharm_bridge.auto_configure_and_start()
         except PyCharmBridgeError as exc:
-            self.iface.messageBar().pushMessage(
-                "DevBridge", self._pycharm_error_message(exc), level=Qgis.MessageLevel.Warning
-            )
+            self._pycharm_failed(exc)
             return
+        self._pycharm_connected(installation)
 
+    # The control panel runs `prepare()` on a worker thread and then calls these on the GUI thread.
+    def _pycharm_failed(self, exc: PyCharmBridgeError) -> None:
+        self.iface.messageBar().pushMessage(
+            "DevBridge", self._pycharm_error_message(exc), level=Qgis.MessageLevel.Warning
+        )
+
+    def _pycharm_connected(self, installation) -> None:
         try:
-            from pathlib import Path
             from qgis.core import QgsApplication
             script_dir = Path(QgsApplication.qgisSettingsDirPath()) / "devbridge"
             script_path = write_bridge_script(
-                installation, self.pycharm_bridge.host, self.pycharm_bridge.port, script_dir
+                installation, self.pycharm_bridge.host, self.pycharm_bridge.port, script_dir,
+                install_dir=self.pycharm_bridge.install_dir,
             )
             saved_note = " " + t("pycharm_script_saved", path=script_path)
         except OSError:
@@ -187,4 +198,10 @@ class DevBridgePlugin:
         if key.startswith("pypi_unreachable"):
             detail = key.split(":", 1)[-1].strip()
             return t("pycharm_pypi_unreachable", error=detail)
+        if key == "other_debugger_loaded":
+            return t("debugger_conflict")
+        if key == "python_not_found":
+            return t("pycharm_python_not_found")
+        if key.startswith("pip_failed"):
+            return t("pycharm_pip_failed", error=key.split(":", 1)[-1].strip())
         return key

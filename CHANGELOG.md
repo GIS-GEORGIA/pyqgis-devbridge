@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 ### Added
+- "How to use" tab (first tab of the panel) and a "How to use" button in the desktop tool: step-by-step
+  instructions in English / Georgian (prepare once, then VS Code or PyCharm).
+- One debugger per QGIS session: debugpy (VS Code) and pydevd-pycharm both load a pydevd under the same module
+  names, so the second one is refused with an explanation instead of a traceback / crash.
 - **DevBridge Control Panel** in QGIS (Plugins > DevBridge > Control Panel + toolbar button): tabs for the
   VS Code bridge, PyCharm bridge, "prepare a plugin" (runs the setup in a worker thread with a live log,
   Open folder / Open in VS Code) and the desktop tool; EN/KA switch; the menu relabels with it.
@@ -30,6 +34,12 @@
   PyCharm Bridge" plugin menu action. Manual `.pycharm-debug/` steps
   remain as the documented fallback for setups it can't detect.
 ### Fixed
+- PyCharm bridge: `pip` was run with `sys.executable`, which inside QGIS is the QGIS program itself. It now finds
+  the matching Python from the interpreter prefix, installs pydevd-pycharm with `--target` into
+  `<settings dir>/pydevd` (no rights needed on QGIS's folders), streams pip's output to the panel and runs it on a
+  worker thread. The generated attach script adds that folder to `sys.path`.
+- PyCharm bridge: connecting while no PyCharm server listened could crash QGIS (pydevd left half-installed in the Qt
+  event loop). The port is now checked first and a failed `settrace` is cleaned up.
 - Child processes (venv, pip) now stream their output to the log (visible inside QGIS / the GUI) instead of
   vanishing, do not flash a console window on Windows, and pip retries with `--user` when the QGIS Python lives
   in a read-only folder such as `C:\Program Files\QGIS 3.44.5`.

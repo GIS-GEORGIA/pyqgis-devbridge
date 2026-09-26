@@ -56,6 +56,7 @@ class DevBridgeApp(ttk.Frame):
                                 width=4, state="readonly")
         lang_box.pack(side="left", padx=4)
         lang_box.bind("<<ComboboxSelected>>", self._on_lang_change)
+        self._text(ttk.Button(top, command=self._show_guide), "gui_guide_btn").pack(side="right")
 
         # settings shared with the QGIS plugin
         box = self._text(ttk.LabelFrame(self, padding=8), "gui_settings")
@@ -118,6 +119,17 @@ class DevBridgeApp(ttk.Frame):
         self._cfg["lang"] = get_lang()
         self._persist()
         self._apply_texts()
+
+    def _show_guide(self) -> None:
+        """Plain step-by-step instructions in a window of their own (re-opened in the current language)."""
+        if getattr(self, "_guide_win", None) is not None and self._guide_win.winfo_exists():
+            self._guide_win.destroy()
+        win = self._guide_win = tk.Toplevel(self.master)
+        win.title(t("gui_guide_title"))
+        box = scrolledtext.ScrolledText(win, width=84, height=26, wrap="word", font="TkDefaultFont")
+        box.insert("1.0", t("gui_guide_text"))
+        box.configure(state="disabled")
+        box.pack(fill="both", expand=True, padx=8, pady=8)
 
     def _load_plugins(self) -> None:
         self._plugins = profiles.find_plugins()

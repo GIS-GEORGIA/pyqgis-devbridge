@@ -1,6 +1,7 @@
 """Auto-detects an installed PyCharm build, resolves and installs the
-matching `pydevd-pycharm` package into QGIS's own interpreter, and
-connects to a PyCharm "Python Debug Server" run configuration — removing
+matching `pydevd-pycharm` package into a folder of its own (using QGIS's
+Python, found from its prefix — inside QGIS `sys.executable` is the QGIS
+program, not Python), and connects to a PyCharm "Python Debug Server" run configuration — removing
 the three manual steps documented in docs/*/usage.md and
 .pycharm-debug/README.*.md (which remain as a fallback for setups this
 can't detect: portable/unzipped PyCharm builds, offline machines, etc.).
@@ -19,7 +20,10 @@ from __future__ import annotations
 import json
 import os
 import platform
+import importlib
 import re
+import shutil
+import socket
 import subprocess
 import sys
 import urllib.request
@@ -172,7 +176,75 @@ def resolve_pydevd_version(build: str) -> str:
     raise PyCharmBridgeError("no_pydevd_versions_found")
 
 
-def _installed_pydevd_version() -> str | None:
+def _other_debugger_loaded() -> bool:
+    try:
+        from .debugger_state import active_backend
+    except ImportError:                      # imported as a top-level module
+        from debugger_state import active_backend
+    return active_backend() == "debugpy"
+
+
+def default_install_dir() -> Path:
+    """Where pydevd-pycharm is installed: next to the shared DevBridge settings,
+    always writable, independent of QGIS's own (often read-only) site-packages."""
+    try:
+        from .shared_config import config_path
+    except ImportError:                      # imported as a top-level module
+        from shared_config import config_path
+    return config_path().parent / "pydevd"
+
+
+def _no_window() -> int:
+    return subprocess.CREATE_NO_WINDOW if platform.system() == "Windows" else 0
+
+
+def _python_version_of(exe: Path) -> str | None:
+    try:
+        out = subprocess.run(
+            [str(exe), "-c", "import sys; print('%d.%d' % sys.version_info[:2])"],
+            capture_output=True, text=True, timeout=20, creationflags=_no_window(),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return out.stdout.strip() if out.returncode == 0 else None
+
+
+def find_python_executable() -> str:
+    """A real `python` matching the interpreter QGIS embeds.
+
+    Inside QGIS, `sys.executable` is the QGIS program itself (`qgis-bin.exe`,
+    `/usr/bin/qgis`, the .app binary), so `sys.executable -m pip` would start
+    another QGIS. Derive the interpreter from the prefix instead."""
+    major, minor = sys.version_info[:2]
+    want = f"{major}.{minor}"
+    exe = Path(sys.executable)
+
+    candidates: list[Path] = []
+    if exe.name.lower().startswith("python"):          # console / python-qgis.bat
+        candidates.append(exe)
+    for prefix in dict.fromkeys((sys.exec_prefix, sys.base_exec_prefix)):
+        base = Path(prefix)
+        if platform.system() == "Windows":
+            candidates.append(base / "python.exe")
+        else:
+            candidates += [base / "bin" / f"python{want}", base / "bin" / "python3", base / "bin" / "python"]
+    candidates += [exe.parent / "bin" / "python3", exe.parent / "python3"]       # macOS .app layouts
+    for name in (f"python{want}", "python3", "python"):
+        found = shutil.which(name)
+        if found:
+            candidates.append(Path(found))
+
+    for cand in dict.fromkeys(candidates):
+        if cand.exists() and _python_version_of(cand) == want:
+            return str(cand)
+    raise PyCharmBridgeError("python_not_found")
+
+
+def _installed_pydevd_version(target: Path | None = None) -> str | None:
+    """Version in our own folder first, then anywhere Python can already see it."""
+    if target is not None:
+        for dist in sorted(target.glob("pydevd_pycharm-*.dist-info")):
+            return dist.name[len("pydevd_pycharm-"):-len(".dist-info")]
     try:
         from importlib import metadata
         return metadata.version("pydevd-pycharm")
@@ -180,12 +252,35 @@ def _installed_pydevd_version() -> str | None:
         return None
 
 
-def install_pydevd_pycharm(python_exe: str, version: str, verbose_print=print) -> None:
-    verbose_print(f"pip install pydevd-pycharm=={version} -> {python_exe}")
-    subprocess.run(
-        [python_exe, "-m", "pip", "install", f"pydevd-pycharm=={version}"],
-        check=True,
-    )
+def _ensure_on_path(target: Path) -> None:
+    if str(target) not in sys.path:
+        sys.path.insert(0, str(target))
+    importlib.invalidate_caches()
+
+
+def install_pydevd_pycharm(python_exe: str, version: str, target: Path, verbose_print=print) -> None:
+    """`pip install --target <target>`: needs no rights on QGIS's own folders.
+    The folder is ours alone, so it is emptied first (clean switch between versions)."""
+    if target.exists():
+        shutil.rmtree(target, ignore_errors=True)
+    target.mkdir(parents=True, exist_ok=True)
+    verbose_print(f"pip install pydevd-pycharm=={version} -> {target}")
+    cmd = [python_exe, "-m", "pip", "install", "--disable-pip-version-check", "--no-input",
+           "--target", str(target), f"pydevd-pycharm=={version}"]
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                text=True, encoding="utf-8", errors="replace", creationflags=_no_window())
+    except OSError as exc:
+        raise PyCharmBridgeError(f"pip_failed: {exc}") from exc
+    tail: list[str] = []
+    assert proc.stdout is not None
+    for raw in proc.stdout:
+        line = raw.rstrip()
+        if line:
+            tail.append(line)
+            verbose_print(line)
+    if proc.wait() != 0:
+        raise PyCharmBridgeError("pip_failed: " + " | ".join(tail[-3:]))
 
 
 # ---------------------------------------------------------------------------
@@ -199,7 +294,8 @@ Start PyCharm's "Python Debug Server" run configuration on {host}:{port}
 first, then run this from the QGIS Python console (or your plugin's
 debug entry point) to attach.
 """
-import pydevd_pycharm
+import sys
+{path_line}import pydevd_pycharm
 
 pydevd_pycharm.settrace(
     "{host}",
@@ -211,20 +307,23 @@ pydevd_pycharm.settrace(
 '''
 
 
-def generate_bridge_script(installation: PyCharmInstallation, host: str, port: int) -> str:
+def generate_bridge_script(installation: PyCharmInstallation, host: str, port: int,
+                           install_dir: Path | None = None) -> str:
+    path_line = f'sys.path.insert(0, r"{install_dir}")\n' if install_dir else ""
     return _SCRIPT_TEMPLATE.format(
         display_name=installation.display_name,
         build=installation.build,
         host=host,
         port=port,
+        path_line=path_line,
     )
 
 
 def write_bridge_script(installation: PyCharmInstallation, host: str, port: int,
-                         target_dir: Path) -> Path:
+                         target_dir: Path, install_dir: Path | None = None) -> Path:
     target_dir.mkdir(parents=True, exist_ok=True)
     out_path = target_dir / "pycharm_attach.py"
-    out_path.write_text(generate_bridge_script(installation, host, port), encoding="utf-8")
+    out_path.write_text(generate_bridge_script(installation, host, port, install_dir), encoding="utf-8")
     return out_path
 
 
@@ -235,9 +334,11 @@ def write_bridge_script(installation: PyCharmInstallation, host: str, port: int,
 # ---------------------------------------------------------------------------
 
 class PyCharmBridge:
-    def __init__(self, host: str = DEFAULT_PYCHARM_HOST, port: int = DEFAULT_PYCHARM_PORT):
+    def __init__(self, host: str = DEFAULT_PYCHARM_HOST, port: int = DEFAULT_PYCHARM_PORT,
+                 install_dir: Path | None = None):
         self.host = host
         self.port = port
+        self.install_dir = install_dir or default_install_dir()
         self._running = False
         self.installation: PyCharmInstallation | None = None
 
@@ -245,35 +346,66 @@ class PyCharmBridge:
     def is_running(self) -> bool:
         return self._running
 
-    def auto_configure_and_start(self, verbose_print=print) -> PyCharmInstallation:
+    def prepare(self, verbose_print=print) -> PyCharmInstallation:
+        """Detect PyCharm and make the matching pydevd-pycharm importable.
+        Slow (may pip-install) and does not touch the debugger, so it is safe
+        to run on a worker thread; call `connect()` afterwards on the main thread."""
         if self._running:
             raise PyCharmBridgeError("already_running")
+        if _other_debugger_loaded():
+            raise PyCharmBridgeError("other_debugger_loaded")
 
         installations = find_pycharm_installations()
         if not installations:
             raise PyCharmBridgeError("not_found")
         installation = installations[0]
 
-        if _installed_pydevd_version() != installation.build:
+        installed = _installed_pydevd_version(self.install_dir)
+        if installed != installation.build:
             version = resolve_pydevd_version(installation.build)  # may raise pypi_unreachable
-            install_pydevd_pycharm(sys.executable, version, verbose_print=verbose_print)
+            if installed != version:
+                install_pydevd_pycharm(find_python_executable(), version, self.install_dir, verbose_print)
+        _ensure_on_path(self.install_dir)
+        return installation
 
+    def auto_configure_and_start(self, verbose_print=print) -> PyCharmInstallation:
+        installation = self.prepare(verbose_print)
+        self.connect(installation)
+        return installation
+
+    def connect(self, installation: PyCharmInstallation) -> None:
+        """Attach QGIS's main thread to the listening PyCharm debug server."""
+        if self._running:
+            raise PyCharmBridgeError("already_running")
+        if _other_debugger_loaded():
+            raise PyCharmBridgeError("other_debugger_loaded")
         try:
             import pydevd_pycharm
         except ImportError as exc:
             raise PyCharmBridgeError("pydevd_missing") from exc
+
+        # Never call settrace() unless PyCharm is really listening: a failed settrace leaves
+        # pydevd half-installed, and inside QGIS (Qt event loop) that kills the whole process.
+        try:
+            with socket.create_connection((self.host, self.port), timeout=3):
+                pass
+        except OSError as exc:
+            raise PyCharmBridgeError("connection_refused") from exc
 
         try:
             pydevd_pycharm.settrace(
                 self.host, port=self.port,
                 stdoutToServer=True, stderrToServer=True, suspend=False,
             )
-        except (ConnectionRefusedError, OSError) as exc:
+        except Exception as exc:
+            try:
+                pydevd_pycharm.stoptrace()      # undo whatever settrace() had already hooked
+            except Exception:
+                pass
             raise PyCharmBridgeError("connection_refused") from exc
 
         self._running = True
         self.installation = installation
-        return installation
 
     def stop(self) -> None:
         if not self._running:

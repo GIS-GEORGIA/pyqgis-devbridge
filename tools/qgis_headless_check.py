@@ -102,10 +102,13 @@ def main() -> int:
 
     plugin._on_control_panel()
     panel = plugin._panel
-    check(panel is not None and panel.tabs.count() == 4, "control panel opens with 4 tabs")
+    check(panel is not None and panel.tabs.count() == 5, "control panel opens with 5 tabs")
+    check(panel.tabs.tabText(0) == "How to use" and "Prepare for debugging" in panel.guide.toPlainText(),
+          "first tab is the step-by-step guide (English)")
 
     panel.lang_box.setCurrentIndex(panel.lang_box.findData("ka"))
-    check(panel.tabs.tabText(0) == "VS Code" and panel.prepare_btn.text() == "დებაგისთვის მომზადება",
+    check(panel.tabs.tabText(1) == "VS Code" and panel.prepare_btn.text() == "დებაგისთვის მომზადება"
+          and "მომზადება" in panel.guide.toPlainText(),
           "language switch to Georgian relabels the panel")
     check(any(a.text().startswith("მართვის") for a, _k in plugin._actions), "menu entries relabelled too")
     panel.lang_box.setCurrentIndex(panel.lang_box.findData("en"))
@@ -115,9 +118,50 @@ def main() -> int:
     print(f"  info {panel.plugin_combo.count()} plugin(s) listed from this profile: "
           f"{[panel.plugin_combo.itemText(i) for i in range(min(4, panel.plugin_combo.count()))]}…")
 
+    # --- PyCharm: the pip step must use QGIS's Python, never the QGIS program itself
+    from DevBridge import pycharm_bridge as pb
+    real_py = pb.find_python_executable()
+    check(Path(real_py).name.lower().startswith("python") and Path(real_py).exists(), f"find_python_executable -> {real_py}")
+    saved_exe = sys.executable
+    sys.executable = str(Path(saved_exe).with_name("qgis-bin.exe"))      # what real QGIS reports
+    try:
+        check(pb.find_python_executable() == real_py or Path(pb.find_python_executable()).name.lower().startswith("python"),
+              "…still finds Python when sys.executable is qgis-bin.exe")
+    finally:
+        sys.executable = saved_exe
+
+    try:
+        versions = pb._available_pydevd_versions()
+    except pb.PyCharmBridgeError as exc:
+        versions = []
+        print("  info PyPI unreachable, skipping real pip test:", exc)
+    if versions:
+        newest = max((v for v in versions if v.count(".") == 2 and v.replace(".", "").isdigit()),
+                     key=lambda v: tuple(int(x) for x in v.split(".")))
+        fake_pc = pb.PyCharmInstallation(tmp / "pycharm", newest, "PY", "PyCharm (fake)")
+        pb.find_pycharm_installations = lambda: [fake_pc]                # no real PyCharm needed
+        plugin.pycharm_bridge.install_dir = tmp / "pydevd"
+        panel.py_port.setValue(12399)                                    # nothing listens here
+        panel._start_pycharm()
+        end = time.time() + 240
+        while panel._py_worker is not None and time.time() < end:
+            loop = QEventLoop()
+            QTimer.singleShot(200, loop.quit)
+            loop.exec()
+        text = panel.py_log.toPlainText()
+        print("  --- pycharm log (tail) ---\n    " + "\n    ".join(text.splitlines()[-4:]))
+        check(panel._py_worker is None, "PyCharm prepare worker finished (UI was not blocked)")
+        check(any(tmp.joinpath("pydevd").glob("pydevd_pycharm-*.dist-info")), "pydevd-pycharm installed into our own folder")
+        import importlib
+        check(importlib.import_module("pydevd_pycharm") is not None, "…and importable inside QGIS")
+        check("12399" in text and not plugin.pycharm_bridge.is_running,
+              "no PyCharm server listening -> clear 'could not connect' message, bridge stays stopped")
+
     # bridges: start may legitimately fail if this QGIS python has no debugpy; it must not crash
     plugin._on_start_bridge()
     print("  info start-bridge message:", iface.bar.messages[-1][:110])
+    if versions:   # PyCharm's pydevd was loaded above -> the VS Code bridge must refuse cleanly, not crash
+        check("only one debugger" in iface.bar.messages[-1], "VS Code bridge refuses politely after PyCharm's pydevd is loaded")
     panel._refresh_status()
     plugin._on_stop_bridge()
     check(True, "start/stop bridge handlers run without raising")

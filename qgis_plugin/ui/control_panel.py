@@ -19,6 +19,7 @@ from qgis.PyQt.QtWidgets import (
 
 from .. import i18n_util, profile_plugins, shared_config, tool_launcher
 from ..i18n_util import t
+from ..pycharm_bridge import PyCharmBridgeError
 
 
 class _SetupWorker(QThread):
@@ -42,14 +43,36 @@ class _SetupWorker(QThread):
             self.finished_ok.emit(True, "")
 
 
+class _PyCharmWorker(QThread):
+    """Detect PyCharm + install the matching pydevd-pycharm (slow) off the GUI thread;
+    the connection itself must then be made on the GUI thread (it traces that thread)."""
+    line = pyqtSignal(str)
+    done = pyqtSignal(object, str)      # (installation | None, error key)
+
+    def __init__(self, bridge, parent=None):
+        super().__init__(parent)
+        self._bridge = bridge
+
+    def run(self) -> None:
+        try:
+            installation = self._bridge.prepare(self.line.emit)
+        except PyCharmBridgeError as exc:
+            self.done.emit(None, str(exc))
+        except Exception as exc:
+            self.done.emit(None, f"pip_failed: {exc}")
+        else:
+            self.done.emit(installation, "")
+
+
 class ControlPanel(QDialog):
     def __init__(self, plugin, parent=None):
         super().__init__(parent)
         self.plugin = plugin           # DevBridgePlugin: owns the two bridge objects
         self._i18n: list = []          # (callable(str), key) pairs re-applied on language change
         self._worker: _SetupWorker | None = None
+        self._py_worker: _PyCharmWorker | None = None
         self._plugin_dirs: list[Path] = []
-        self.setMinimumWidth(560)
+        self.setMinimumWidth(800)
 
         layout = QVBoxLayout(self)
         top = QHBoxLayout()
@@ -66,6 +89,7 @@ class ControlPanel(QDialog):
         layout.addLayout(top)
 
         self.tabs = QTabWidget()
+        self.tabs.addTab(self._build_guide_tab(), "")
         self.tabs.addTab(self._build_vscode_tab(), "")
         self.tabs.addTab(self._build_pycharm_tab(), "")
         self.tabs.addTab(self._build_project_tab(), "")
@@ -98,7 +122,7 @@ class ControlPanel(QDialog):
         self.setWindowTitle(t("cp_title"))
         for setter, key in self._i18n:
             setter(t(key))
-        for i, key in enumerate(("cp_tab_vscode", "cp_tab_pycharm", "cp_tab_project", "cp_tab_tool")):
+        for i, key in enumerate(("cp_tab_guide", "cp_tab_vscode", "cp_tab_pycharm", "cp_tab_project", "cp_tab_tool")):
             self.tabs.setTabText(i, t(key))
         self._refresh_status()
 
@@ -107,6 +131,17 @@ class ControlPanel(QDialog):
         i18n_util.set_lang(lang)
         self.plugin.remember_lang(lang)
         self._retranslate()
+
+    # --- guide tab ----------------------------------------------------------
+    def _build_guide_tab(self) -> QWidget:
+        w = QWidget()
+        lay = QVBoxLayout(w)
+        self.guide = QPlainTextEdit()
+        self.guide.setReadOnly(True)
+        self.guide.setMinimumHeight(360)
+        self._bind(self.guide.setPlainText, "cp_guide")
+        lay.addWidget(self.guide)
+        return w
 
     # --- VS Code tab ------------------------------------------------------
     def _build_vscode_tab(self) -> QWidget:
@@ -180,12 +215,21 @@ class ControlPanel(QDialog):
         self.py_status = QLabel()
         lay.addWidget(self.py_status)
         row = QHBoxLayout()
-        row.addWidget(self._button("menu_pycharm_auto", self._start_pycharm))
+        self.py_start = self._button("menu_pycharm_auto", self._start_pycharm)
+        row.addWidget(self.py_start)
         row.addWidget(self._button("menu_pycharm_stop", self._stop_pycharm))
         row.addWidget(self._button("menu_pycharm_help", self.plugin._on_pycharm_help))
         row.addStretch(1)
         lay.addLayout(row)
-        lay.addStretch(1)
+        self.py_busy = QProgressBar()
+        self.py_busy.setRange(0, 0)
+        self.py_busy.setTextVisible(False)
+        self.py_busy.hide()
+        lay.addWidget(self.py_busy)
+        self.py_log = QPlainTextEdit()
+        self.py_log.setReadOnly(True)
+        self.py_log.setMinimumHeight(110)
+        lay.addWidget(self.py_log)
         return w
 
     def _start_pycharm(self) -> None:
@@ -193,11 +237,37 @@ class ControlPanel(QDialog):
             self.plugin.pycharm_bridge.host = self.py_host.text().strip() or self.plugin.pycharm_bridge.host
             self.plugin.pycharm_bridge.port = self.py_port.value()
             self.plugin.persist_settings()
-        QgsApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)   # may pip-install pydevd-pycharm
-        try:
-            self.plugin._on_pycharm_auto()
-        finally:
-            QgsApplication.restoreOverrideCursor()
+        if self._py_worker is not None or self.plugin.pycharm_bridge.is_running:
+            self.plugin._on_pycharm_auto()      # reports "already running"
+            return
+        self.py_log.clear()
+        self.py_log.appendPlainText(t("pycharm_detecting"))
+        self.py_start.setEnabled(False)
+        self.py_busy.show()
+        self._py_worker = _PyCharmWorker(self.plugin.pycharm_bridge, self)
+        self._py_worker.line.connect(self.py_log.appendPlainText)
+        self._py_worker.done.connect(self._pycharm_prepared)
+        self._py_worker.start()
+
+    def _pycharm_prepared(self, installation, error: str) -> None:
+        """Back on the GUI thread: report a failure, or make the connection here."""
+        self.py_busy.hide()
+        self.py_start.setEnabled(True)
+        self._py_worker = None
+        if installation is None:
+            exc = PyCharmBridgeError(error)
+            self.py_log.appendPlainText(self.plugin._pycharm_error_message(exc))
+            self.plugin._pycharm_failed(exc)
+        else:
+            try:
+                self.plugin.pycharm_bridge.connect(installation)
+            except PyCharmBridgeError as exc:
+                self.py_log.appendPlainText(self.plugin._pycharm_error_message(exc))
+                self.plugin._pycharm_failed(exc)
+            else:
+                self.py_log.appendPlainText(t("pycharm_bridge_started", host=self.plugin.pycharm_bridge.host,
+                                              port=self.plugin.pycharm_bridge.port, build=installation.build))
+                self.plugin._pycharm_connected(installation)
         self._refresh_status()
 
     def _stop_pycharm(self) -> None:
