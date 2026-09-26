@@ -14,7 +14,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
-from . import bridge_plugin, config, desktop, pipeline, profiles
+from . import bridge_plugin, config, desktop, pipeline, profiles, scaffold
 from .i18n_util import detect_system_lang, get_lang, set_lang, t
 
 _POLL_MS = 100
@@ -35,6 +35,10 @@ class DevBridgeApp(ttk.Frame):
         self.py_host = tk.StringVar(value=str(self._cfg["pycharm_host"]))
         self.py_port = tk.StringVar(value=str(self._cfg["pycharm_port"]))
         self.project_dir = tk.StringVar(value="")
+        self.mode = tk.StringVar(value="existing")          # existing | new | folder
+        self.new_name = tk.StringVar(value="")
+        default_parent = profiles.default_plugins_dir()
+        self.new_parent = tk.StringVar(value=str(default_parent) if default_parent else "")
 
         self._build_widgets()
         self.pack(fill="both", expand=True)
@@ -71,29 +75,50 @@ class DevBridgeApp(ttk.Frame):
         self._text(ttk.Button(box, command=self._save_settings), "gui_save_settings").grid(
             row=0, column=4, rowspan=2, padx=8)
 
-        # project
+        # project: what do you want to do?
         proj = self._text(ttk.LabelFrame(self, padding=8), "gui_project")
         proj.pack(fill="x", pady=4)
-        plug_row = ttk.Frame(proj)
-        plug_row.pack(fill="x", pady=2)
-        self._text(ttk.Label(plug_row), "gui_plugin_label").pack(side="left")
-        self.plugin_box = ttk.Combobox(plug_row, state="readonly", width=38)
+        modes = ttk.Frame(proj)
+        modes.pack(fill="x")
+        for value, key in (("existing", "gui_mode_existing"), ("new", "gui_mode_new"), ("folder", "gui_mode_folder")):
+            self._text(ttk.Radiobutton(modes, variable=self.mode, value=value, command=self._show_mode), key
+                       ).pack(side="left", padx=(0, 14))
+
+        # existing plugin: a list over ALL QGIS profiles, nothing pre-selected
+        self.existing_row = ttk.Frame(proj)
+        self._text(ttk.Label(self.existing_row), "gui_plugin_label").pack(side="left")
+        self.plugin_box = ttk.Combobox(self.existing_row, state="readonly", width=44)
         self.plugin_box.pack(side="left", padx=4)
         self.plugin_box.bind("<<ComboboxSelected>>", self._on_plugin_pick)
-        self._text(ttk.Button(plug_row, command=self._load_plugins), "gui_refresh").pack(side="left")
+        self._text(ttk.Button(self.existing_row, command=self._load_plugins), "gui_refresh").pack(side="left")
 
-        dir_row = ttk.Frame(proj)
-        dir_row.pack(fill="x", pady=2)
-        self._text(ttk.Label(dir_row), "gui_project_label").pack(side="left")
-        ttk.Entry(dir_row, textvariable=self.project_dir, width=46).pack(side="left", padx=4)
-        ttk.Button(dir_row, text="...", width=3, command=self._browse).pack(side="left")
+        # new plugin: name + where to create it
+        self.new_frame = ttk.Frame(proj)
+        r1 = ttk.Frame(self.new_frame)
+        r1.pack(fill="x", pady=2)
+        self._text(ttk.Label(r1, width=18), "gui_new_name").pack(side="left")
+        ttk.Entry(r1, textvariable=self.new_name, width=30).pack(side="left", padx=4)
+        r2 = ttk.Frame(self.new_frame)
+        r2.pack(fill="x", pady=2)
+        self._text(ttk.Label(r2, width=18), "gui_new_parent").pack(side="left")
+        ttk.Entry(r2, textvariable=self.new_parent, width=46).pack(side="left", padx=4)
+        ttk.Button(r2, text="...", width=3, command=self._browse_parent).pack(side="left")
 
-        btn_row = ttk.Frame(proj)
-        btn_row.pack(fill="x", pady=(6, 0))
-        self.run_btn = self._text(ttk.Button(btn_row, command=self._run_setup), "gui_prepare")
+        # any folder
+        self.folder_row = ttk.Frame(proj)
+        self._text(ttk.Label(self.folder_row), "gui_project_label").pack(side="left")
+        ttk.Entry(self.folder_row, textvariable=self.project_dir, width=46).pack(side="left", padx=4)
+        ttk.Button(self.folder_row, text="...", width=3, command=self._browse).pack(side="left")
+
+        self.btn_row = ttk.Frame(proj)
+        self.run_btn = self._text(ttk.Button(self.btn_row, command=self._run_setup), "gui_prepare")
         self.run_btn.pack(side="left", padx=(0, 6))
-        self._text(ttk.Button(btn_row, command=self._open_folder), "gui_open_folder").pack(side="left", padx=(0, 6))
-        self._text(ttk.Button(btn_row, command=self._open_vscode), "gui_open_vscode").pack(side="left")
+        self.open_btns = ttk.Frame(self.btn_row)
+        self._text(ttk.Button(self.open_btns, command=self._open_folder), "gui_open_folder").pack(side="left", padx=(0, 6))
+        self._text(ttk.Button(self.open_btns, command=self._open_vscode), "gui_open_vscode").pack(side="left")
+        self.open_btns.pack(side="left")
+        self._proj_frame = proj
+        self._show_mode()
 
         # DevBridge QGIS plugin
         qbox = self._text(ttk.LabelFrame(self, padding=8), "gui_qgis_plugin")
@@ -112,6 +137,10 @@ class DevBridgeApp(ttk.Frame):
         for key, widgets in self._labels.items():
             for w in widgets:
                 w.configure(text=t(key))
+        if hasattr(self, "plugin_box"):                  # keep the current pick, retitle the placeholder
+            current = self.plugin_box.current()
+            self.plugin_box["values"] = [t("gui_plugin_placeholder")] + [p.label for p in self._plugins]
+            self.plugin_box.current(max(current, 0))
 
     # --- events ----------------------------------------------------------------
     def _on_lang_change(self, _evt=None) -> None:
@@ -131,17 +160,41 @@ class DevBridgeApp(ttk.Frame):
         box.configure(state="disabled")
         box.pack(fill="both", expand=True, padx=8, pady=8)
 
+    def _show_mode(self) -> None:
+        for frame in (self.existing_row, self.new_frame, self.folder_row, self.btn_row):
+            frame.pack_forget()
+        mode = self.mode.get()
+        {"existing": self.existing_row, "new": self.new_frame, "folder": self.folder_row}[mode].pack(
+            fill="x", pady=(8, 2))
+        self.btn_row.pack(fill="x", pady=(6, 0))
+        self._sync_prepare_label()
+
+    def _sync_prepare_label(self) -> None:
+        """The prepare button doubles as 'Create and prepare' in new-plugin mode."""
+        key = "gui_new_create" if self.mode.get() == "new" else "gui_prepare"
+        for k, widgets in self._labels.items():
+            if self.run_btn in widgets and k != key:
+                widgets.remove(self.run_btn)
+        self._labels.setdefault(key, [])
+        if self.run_btn not in self._labels[key]:
+            self._labels[key].append(self.run_btn)
+        self.run_btn.configure(text=t(key))
+
     def _load_plugins(self) -> None:
         self._plugins = profiles.find_plugins()
-        self.plugin_box["values"] = [p.label for p in self._plugins]
-        if self._plugins and not self.plugin_box.get():
-            self.plugin_box.current(0)
-            self._on_plugin_pick()
+        self.plugin_box["values"] = [t("gui_plugin_placeholder")] + [p.label for p in self._plugins]
+        self.plugin_box.current(0)                       # nothing chosen until the user picks
+        if self.mode.get() == "existing":
+            self.project_dir.set("")
 
     def _on_plugin_pick(self, _evt=None) -> None:
-        idx = self.plugin_box.current()
-        if idx >= 0:
-            self.project_dir.set(str(self._plugins[idx].path))
+        idx = self.plugin_box.current() - 1              # entry 0 is the placeholder
+        self.project_dir.set(str(self._plugins[idx].path) if 0 <= idx < len(self._plugins) else "")
+
+    def _browse_parent(self) -> None:
+        chosen = filedialog.askdirectory(title=t("gui_browse_title"))
+        if chosen:
+            self.new_parent.set(chosen)
 
     def _browse(self) -> None:
         chosen = filedialog.askdirectory(title=t("gui_browse_title"))
@@ -175,10 +228,27 @@ class DevBridgeApp(ttk.Frame):
 
     def _project_path(self) -> Path | None:
         raw = self.project_dir.get().strip()
+        if not raw and self.mode.get() == "existing":
+            messagebox.showwarning("DevBridge", t("gui_choose_plugin_first"))
+            return None
         if not raw or not Path(raw).is_dir():
             messagebox.showwarning("DevBridge", t("gui_project_missing"))
             return None
         return Path(raw)
+
+    def _create_new(self) -> Path | None:
+        """New-plugin mode: write the starter files, then it is prepared like any other folder."""
+        parent, name = Path(self.new_parent.get().strip() or "."), self.new_name.get().strip()
+        try:
+            parent.mkdir(parents=True, exist_ok=True)
+            path = scaffold.create_plugin(parent, name)
+        except (scaffold.ScaffoldError, OSError) as exc:
+            key = f"new_{exc}" if isinstance(exc, scaffold.ScaffoldError) else None
+            messagebox.showwarning("DevBridge", t(key, name=name, path=parent) if key else str(exc))
+            return None
+        self._log(t("new_created", path=path))
+        self.project_dir.set(str(path))
+        return path
 
     def _open_folder(self) -> None:
         path = self._project_path()
@@ -208,9 +278,11 @@ class DevBridgeApp(ttk.Frame):
         self.after(_POLL_MS, self._drain_log)
 
     def _run_setup(self) -> None:
-        path = self._project_path()
         cfg = self._settings_from_form()
-        if path is None or cfg is None:
+        if cfg is None:
+            return
+        path = self._create_new() if self.mode.get() == "new" else self._project_path()
+        if path is None:
             return
         self._cfg = cfg
         self._persist()
@@ -220,6 +292,8 @@ class DevBridgeApp(ttk.Frame):
     def _setup_worker(self, path: Path, port: int) -> None:
         try:
             pipeline.run_setup(path, port=port, log=self._log)
+            if self.mode.get() == "new":
+                self._log(t("new_next_steps"))
         except Exception as exc:  # surfaced in the log pane, not a stack-trace dialog
             self._log(f"ERROR: {exc}")
         finally:

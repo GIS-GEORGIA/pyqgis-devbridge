@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 ### Added
+- New plugin or existing one: the panel's "Prepare a plugin" tab (and the desktop tool) now start with a choice - **Improve an existing plugin**
+  (a list over *every* QGIS profile, QGIS3 and QGIS4, nothing pre-selected), **Start a NEW plugin** (name + where; writes a working Qt5/Qt6
+  starter plugin, then prepares it) or **Any folder**. CLI: `devbridge new my_plugin`, and the picker of `devbridge setup` offers "N. Start a NEW plugin"
+  (also when the profile has no plugins yet). `src/devbridge/scaffold.py` writes the starter files.
 - "How to use" tab (first tab of the panel) and a "How to use" button in the desktop tool: step-by-step
   instructions in English / Georgian (prepare once, then VS Code or PyCharm).
 - One debugger per QGIS session: debugpy (VS Code) and pydevd-pycharm both load a pydevd under the same module
@@ -34,6 +38,7 @@
   PyCharm Bridge" plugin menu action. Manual `.pycharm-debug/` steps
   remain as the documented fallback for setups it can't detect.
 ### Fixed
+- The panel listed only the running QGIS profile and silently pre-selected its first plugin (e.g. `postgis_manager` in QGIS 4 hid the QGIS 3 plugins).
 - PyCharm bridge: `pip` was run with `sys.executable`, which inside QGIS is the QGIS program itself. It now finds
   the matching Python from the interpreter prefix, installs pydevd-pycharm with `--target` into
   `<settings dir>/pydevd` (no rights needed on QGIS's folders), streams pip's output to the panel and runs it on a

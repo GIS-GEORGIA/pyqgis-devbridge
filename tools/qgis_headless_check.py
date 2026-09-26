@@ -115,8 +115,50 @@ def main() -> int:
     check(panel.prepare_btn.text() == "Prepare for debugging", "…and back to English")
     check(i18n_util.get_lang() == "en", "plugin language state follows the switch")
 
-    print(f"  info {panel.plugin_combo.count()} plugin(s) listed from this profile: "
-          f"{[panel.plugin_combo.itemText(i) for i in range(min(4, panel.plugin_combo.count()))]}…")
+    items = [panel.plugin_combo.itemText(i) for i in range(panel.plugin_combo.count())]
+    print(f"  info {len(items) - 1} plugin(s) listed across profiles: {items[1:4]}...")
+    check(panel.plugin_combo.currentIndex() == 0 and items[0].startswith("- "),
+          "nothing is pre-selected: entry 0 is a placeholder")
+    from qgis.core import QgsApplication as _QA
+    base = Path(_QA.qgisSettingsDirPath()).parents[2]
+    other = "QGIS4" if "QGIS3" in str(_QA.qgisSettingsDirPath()) else "QGIS3"
+    if (base / other / "profiles").is_dir() and any((base / other / "profiles").glob("*/python/plugins/*/__init__.py")):
+        check(any(f"({other}/" in i for i in items), f"list also shows plugins of the {other} profile")
+    panel.mode_new.setChecked(True)
+    check(panel.mode_pages.currentIndex() == 1 and panel.prepare_btn.text() == "Create and prepare",
+          "'Start a NEW plugin' switches the form and the button")
+    panel.mode_folder.setChecked(True)
+    check(panel.mode_pages.currentIndex() == 2 and panel.prepare_btn.text() == "Prepare for debugging", "'Any folder' mode")
+    panel.mode_existing.setChecked(True)
+
+    # a brand-new plugin: the scaffold must load and unload in this QGIS (Qt5 or Qt6)
+    panel.mode_new.setChecked(True)
+    panel.new_parent.setText(str(tmp / "scratch_plugins"))
+    panel.new_name.setText("hello_new")
+    created = panel._target_path(create=True)
+    check(created is not None and (created / "plugin.py").exists() and (created / "metadata.txt").exists(),
+          f"new plugin scaffold written ({created})")
+    import importlib
+    sys.path.insert(0, str(tmp / "scratch_plugins"))
+    new_iface = StubIface()
+    new_plugin = importlib.import_module("hello_new").classFactory(new_iface)
+    new_plugin.initGui()
+    check(len(new_iface.menu_actions) == 1, "the new plugin's initGui adds its menu entry")
+    from qgis.PyQt.QtWidgets import QMessageBox
+    shown, warned = [], []
+    QMessageBox.information = staticmethod(lambda *a, **k: shown.append(a[2]))
+    QMessageBox.warning = staticmethod(lambda *a, **k: warned.append(a[2]))   # modal boxes would block a headless run
+    new_plugin.run()
+    check(shown == ["Hello from Hello New!"], "the new plugin's action runs")
+    new_plugin.unload()
+    check(not new_iface.menu_actions, "the new plugin unloads cleanly")
+    panel.new_name.setText("hello_new")
+    check(panel._target_path(create=True) is None and warned and "already contains" in warned[-1],
+          "creating the same plugin again is refused with a message, not overwritten")
+    panel.new_name.setText("Bad Name")
+    check(panel._target_path(create=True) is None and "not a valid plugin name" in warned[-1], "a bad name is explained")
+    panel._just_created = False
+    panel.mode_existing.setChecked(True)
 
     # --- PyCharm: the pip step must use QGIS's Python, never the QGIS program itself
     from DevBridge import pycharm_bridge as pb
@@ -179,10 +221,10 @@ def main() -> int:
         print("  info no Python with tkinter on this machine (the panel would show the install hint)")
 
     if run_setup:
-        proj = tmp / "my_plugin"
-        proj.mkdir()
-        (proj / "__init__.py").write_text("")
-        panel.project_edit.setText(str(proj))
+        proj = tmp / "setup_plugins" / "my_plugin"
+        panel.mode_new.setChecked(True)                      # the whole new-plugin path: scaffold + venv + debugpy
+        panel.new_parent.setText(str(proj.parent))
+        panel.new_name.setText("my_plugin")
         panel._prepare()
         loop_end = time.time() + 600
         while panel._worker is not None and time.time() < loop_end:
@@ -193,8 +235,9 @@ def main() -> int:
         print("  --- setup log (tail) ---\n    " + "\n    ".join(log.splitlines()[-8:]))
         check(panel._worker is None, "setup worker finished")
         check("ERROR" not in log, "setup finished without ERROR")
-        check((proj / ".venv").is_dir() and (proj / ".vscode" / "launch.json").exists(),
-              ".venv and .vscode/launch.json were created")
+        check((proj / ".venv").is_dir() and (proj / ".vscode" / "launch.json").exists() and (proj / "plugin.py").exists(),
+              "new plugin: starter files + .venv + .vscode/launch.json were created")
+        check("Next:" in log, "the panel tells what to do next")
 
     plugin.unload()
     check(not iface.menu_actions and not iface.toolbar_actions, "unload removes every action")

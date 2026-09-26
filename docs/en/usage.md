@@ -8,7 +8,7 @@ Plugins → DevBridge → **Control Panel** (also a toolbar button). Five tabs, 
 - **How to use** — the step-by-step instructions (first tab).
 - **VS Code** — host/port, *Start / Stop debug bridge*, status.
 - **PyCharm** — host/port, *Auto-configure & start*, *Stop*, manual instructions.
-- **Prepare a plugin** — choose one of your plugins from this QGIS profile (or any folder) and press
+- **Prepare a plugin** — first choose what you want: *Improve an existing plugin* (the list covers every QGIS profile, QGIS 3 and 4), *Start a NEW plugin* (type a lowercase name; DevBridge writes a small working starter plugin into your profile's plugins folder) or *Any folder*. Then press
   *Prepare for debugging*: creates `.venv`, installs `debugpy`, writes `.vscode/launch.json`. Progress and
   pip output appear in the log. *Open folder* / *Open in VS Code* do what they say.
 - **Desktop tool** — *Launch desktop tool* opens the standalone window (same operations, no QGIS

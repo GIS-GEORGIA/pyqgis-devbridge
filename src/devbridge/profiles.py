@@ -41,6 +41,17 @@ def profile_roots() -> list[Path]:
     return [base / "QGIS" / major / "profiles" for major in ("QGIS3", "QGIS4")]
 
 
+def default_plugins_dir(major: str | None = None) -> Path | None:
+    """`python/plugins` of the first existing `default` profile (QGIS3 before QGIS4),
+    or of the given major version ("3" / "4"). None if QGIS has never been started."""
+    for root in profile_roots():
+        if major and root.parent.name != f"QGIS{major}":
+            continue
+        if (root / "default").is_dir():
+            return root / "default" / "python" / "plugins"
+    return None
+
+
 def _is_plugin_dir(path: Path) -> bool:
     return path.is_dir() and (path / "__init__.py").exists() and not path.name.startswith((".", "_"))
 

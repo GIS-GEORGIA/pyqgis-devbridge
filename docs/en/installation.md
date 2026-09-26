@@ -55,6 +55,7 @@ devbridge plugins                      # list plugins found in your profile
 devbridge setup                        # auto if there is one, numbered picker if several
 devbridge setup --plugin MyPlugin      # or pick by name
 devbridge setup --project-dir /path/to/folder   # any other folder instead
+devbridge new my_plugin                         # start a NEW plugin (starter files) and prepare it
 ```
 
 Or launch the GUI:

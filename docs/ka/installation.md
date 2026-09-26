@@ -57,6 +57,7 @@ devbridge setup                        # ერთი plugin-ის შემთ
                                        # რამდენიმეს შემთხვევაში ნომრით ირჩევთ
 devbridge setup --plugin MyPlugin      # ან სახელით
 devbridge setup --project-dir /path/to/folder   # ნებისმიერი სხვა საქაღალდე
+devbridge new my_plugin                         # ახალი დანამატის დაწყება (საწყისი ფაილები) და მომზადება
 ```
 
 ან გახსენით GUI:

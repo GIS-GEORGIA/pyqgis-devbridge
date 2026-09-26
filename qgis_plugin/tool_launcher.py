@@ -134,6 +134,16 @@ def open_in_vscode(path: Path) -> bool:
     return True
 
 
+def create_plugin(parent_dir: Path, name: str) -> Path:
+    """Write the starter files of a brand-new plugin with the bundled tool.
+    Raises ValueError (`str(exc)` = name_invalid / name_reserved / exists / parent_missing)."""
+    ensure_importable()
+    from devbridge import scaffold   # noqa: PLC0415 - bundled, path added above
+    parent_dir = Path(parent_dir)
+    parent_dir.mkdir(parents=True, exist_ok=True)
+    return scaffold.create_plugin(parent_dir, name)
+
+
 def run_setup(project_dir: Path, port: int, lang: str, log, qgis_prefix_path: str | None = None) -> None:
     """Prepare `project_dir` for debugging, in this (QGIS) process, using the
     bundled tool. Blocking — call it from a worker thread."""
