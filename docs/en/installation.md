@@ -1,5 +1,15 @@
 # Installation
 
+Two ways in — pick one:
+
+- **Just want to use it?** [From plugins.qgis.ge](#from-pluginsqgisge-no-clone-no-command-line) below:
+  install the QGIS plugin, everything else happens from its Control Panel. No terminal needed.
+- **Developing devbridge itself, or want it from a git checkout?** [Quick start, from a repo
+  clone](#quick-start-everything-automated-from-a-repo-clone): one script does the same three things
+  (install the CLI, link the QGIS plugin, prepare a plugin for debugging) that
+  [the manual steps](#1-standalone-setup-tool-cli--gui) further down do one at a time — read those only if
+  the script fails and you need to see what it's doing.
+
 ## From plugins.qgis.ge (no clone, no command line)
 
 1. QGIS → Plugins → Manage and Install Plugins → Settings → Add →
@@ -32,8 +42,10 @@ config). Afterwards restart QGIS. Re-running is safe. Useful switches:
 `-SkipBridge` / `-SkipSetup` (`--skip-bridge` / `--skip-setup`),
 `-ProjectDir` (`--project-dir`) for any folder, `-Copy` to copy instead of
 link. If QGIS is running, its settings file is left alone: tick DevBridge in
-the Plugin Manager or close QGIS and re-run. The manual steps below do the
-same thing one at a time.
+the Plugin Manager or close QGIS and re-run.
+
+**That's it for most people.** The sections below (1 and 2) are the same two steps done by hand — read them
+only to understand what the script did, or if it failed and you need to do a step yourself.
 
 ## 1. Standalone setup tool (CLI + GUI)
 
@@ -89,10 +101,11 @@ profile's plugin folder, named `DevBridge`:
 
 Then enable it from **Plugins → Manage and Install Plugins → Installed**.
 
-A packaged `.zip` suitable for the QGIS Plugin Repository can be built
-with:
+A packaged `.zip` suitable for the QGIS Plugin Repository is built with
+`make_plugin_zip.py` (from the repo root) — **not** a plain `zip -r` of
+`qgis_plugin/`, which would leave out the bundled `tool/` folder (the
+standalone desktop app) and produce a broken package:
 
 ```bash
-cd qgis_plugin
-zip -r ../DevBridge.zip . -x "__pycache__/*"
+python make_plugin_zip.py    # -> dist/DevBridge.zip
 ```

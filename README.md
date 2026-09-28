@@ -20,16 +20,11 @@ Two halves, one protocol:
 | Piece | What it is | Where |
 |---|---|---|
 | **`devbridge` CLI/GUI** | Detects QGIS, builds a matching venv, installs `debugpy`, writes `.vscode/` config | `src/devbridge/` — `pip install -e .` |
-| **DevBridge plugin** | QGIS plugin that starts a `debugpy` server inside the running QGIS process | `qgis_plugin/` — copy into your QGIS profile |
+| **DevBridge plugin** | QGIS plugin that starts a `debugpy` server inside the running QGIS process | `qgis_plugin/` — installed from plugins.qgis.ge, or copy into your QGIS profile |
 
-```bash
-pip install -e .
-devbridge setup --project-dir /path/to/plugin --lang en   # or --lang ka
-```
-Then in QGIS: **Plugins → DevBridge → Start Debug Bridge (VS Code)**,
-and in VS Code: **Run and Debug → PyQGIS: Attach to running QGIS**.
-
-Full docs: [`docs/en/`](docs/en/installation.md) · [`docs/ka/`](docs/ka/installation.md)
+**Full install + first-debug-session walkthrough:** [`docs/en/installation.md`](docs/en/installation.md) →
+[`docs/en/usage.md`](docs/en/usage.md) · [`docs/ka/installation.md`](docs/ka/installation.md) →
+[`docs/ka/usage.md`](docs/ka/usage.md).
 
 ---
 
@@ -39,20 +34,6 @@ Full docs: [`docs/en/`](docs/en/installation.md) · [`docs/ka/`](docs/ka/install
 დებაგინგის ხიდი VS Code-სთვის, PyCharm-ის დოკუმენტირებული გზით.**
 ორენოვანი (ინგლისური / ქართული).
 
-ორი ნაწილი, ერთი პროტოკოლი:
-
-| ნაწილი | რა არის | სად |
-|---|---|---|
-| **`devbridge` CLI/GUI** | პოულობს QGIS-ს, აწყობს შესაბამის venv-ს, აყენებს `debugpy`-ს, წერს `.vscode/` კონფიგურაციას | `src/devbridge/` — `pip install -e .` |
-| **DevBridge plugin** | QGIS plugin, რომელიც გაშვებულ QGIS პროცესში `debugpy` სერვერს იწყებს | `qgis_plugin/` — დააკოპირეთ QGIS პროფილში |
-
-```bash
-pip install -e .
-devbridge setup --project-dir /path/to/plugin --lang ka
-```
-შემდეგ QGIS-ში: **Plugins → DevBridge → დებაგ ხიდის გაშვება (VS Code)**,
-VS Code-ში: **Run and Debug → PyQGIS: Attach to running QGIS**.
-
 **ყველაზე მარტივი გზა:** QGIS-ში დაამატეთ რეპოზიტორია `https://plugins.qgis.ge/plugins.xml`
 (Plugins → Manage and Install Plugins → Settings → Add), დააყენეთ **DevBridge** და გახსენით
 **Plugins → DevBridge → მართვის პანელი**: VS Code-ისა და PyCharm-ის ხიდების გაშვება/გაჩერება,
@@ -60,7 +41,20 @@ VS Code-ში: **Run and Debug → PyQGIS: Attach to running QGIS**.
 პანელიდან შეგიძლიათ გახსნათ (ან მისი საქაღალდე გახსნათ) ცალკე დესკტოპ ხელსაწყო, რომელიც იგივეს
 აკეთებს QGIS-ის გაშვების გარეშე.
 
-სრული დოკუმენტაცია: [`docs/ka/`](docs/ka/installation.md) · [`docs/en/`](docs/en/installation.md)
+`devbridge setup` ასევე წერს VS Code-ის launch კონფიგურაციას, რომელიც თავად უშვებს QGIS-ს უკვე მოქმედი
+ხიდით (`devbridge launch`), რომ F5-მდე QGIS-ის მენიუში ხელით დაჭერა აღარ დაგჭირდეთ. თხელი
+[VS Code extension](extensions/vscode/) ამას ღილაკებად/ბრძანებებად აქცევს, ვისაც CLI-ის ალამები არ სურს ახსოვდეს.
+
+ორი ნაწილი, ერთი პროტოკოლი:
+
+| ნაწილი | რა არის | სად |
+|---|---|---|
+| **`devbridge` CLI/GUI** | პოულობს QGIS-ს, აწყობს შესაბამის venv-ს, აყენებს `debugpy`-ს, წერს `.vscode/` კონფიგურაციას | `src/devbridge/` — `pip install -e .` |
+| **DevBridge plugin** | QGIS plugin, რომელიც გაშვებულ QGIS პროცესში `debugpy` სერვერს იწყებს | `qgis_plugin/` — დაყენებულია plugins.qgis.ge-დან, ან დააკოპირეთ QGIS პროფილში |
+
+**სრული ინსტალაცია + პირველი დებაგ სესია:** [`docs/ka/installation.md`](docs/ka/installation.md) →
+[`docs/ka/usage.md`](docs/ka/usage.md) · [`docs/en/installation.md`](docs/en/installation.md) →
+[`docs/en/usage.md`](docs/en/usage.md).
 
 ---
 

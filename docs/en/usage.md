@@ -46,18 +46,18 @@ against a real QGIS 3.44.5 (standalone install and OSGeo4W).
 Settings (language, ports) are stored in one file shared by the panel, the desktop tool and the
 `devbridge` command. Its location is shown on the *Desktop tool* tab.
 
-## Starting a debug session
+## Setting a breakpoint, either way
 
-1. In QGIS: **Plugins → DevBridge → Start Debug Bridge (VS Code)**.
-   A message bar confirms the bridge is listening (default
-   `localhost:5678`).
-2. In VS Code, open the project the setup tool configured, go to
-   **Run and Debug**, choose **"PyQGIS: Attach to running QGIS"**, press
-   Start.
-3. Set breakpoints in your plugin code or in a standalone script; trigger
-   the code path from inside QGIS (e.g. run your plugin action, or run a
-   script through the Python console) and execution will pause at your
-   breakpoint.
+Once the bridge is listening (Control Panel's *VS Code* tab, or `devbridge launch`) and VS Code is attached
+(*Run and Debug → "PyQGIS: Attach to running QGIS"*, or already attached because you used *Launch QGIS +
+attach*): set breakpoints in your plugin code or in a standalone script, trigger that code path from inside
+QGIS (run your plugin's action, or run a script through the Python console), and execution pauses there.
+
+### Without the Control Panel
+
+Everything above can also be done from the plugin's menu directly, without opening the panel:
+**Plugins → DevBridge → Start Debug Bridge (VS Code)** starts the same bridge (same message-bar confirmation,
+default `localhost:5678`), then attach from VS Code as above.
 
 ## Known limitation: stopping the bridge
 
