@@ -86,6 +86,7 @@ def _no_prompt(monkeypatch):
 def test_cli_new_creates_and_prepares(tmp_path: Path, monkeypatch, capsys):
     _no_prompt(monkeypatch)
     prepared: list[Path] = []
+    monkeypatch.setattr(cli.pipeline, "find_qgis", lambda **kw: object())   # any non-None sentinel
     monkeypatch.setattr(cli.pipeline, "run_setup", lambda path, port=5678, **kw: prepared.append(path))
     code = cli.main(["--lang", "en", "new", "my_plugin", "--dir", str(tmp_path)])
     assert code == 0 and (tmp_path / "my_plugin" / "plugin.py").exists()
