@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 import platform
-import socket
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,6 +18,7 @@ from typing import Callable
 from . import bridge_plugin, pipeline, project_config, vscode_config
 from .detectors.base import QgisInstallation
 from .i18n_util import t
+from .netutil import port_free as _port_free
 
 
 @dataclass
@@ -69,16 +69,6 @@ def _python_can_import(python_exe: Path, module: str, timeout: int = 45,
         if wrapper is not None:
             return _try_import(wrapper, module, timeout)
     return _try_import(python_exe, module, timeout)
-
-
-def _port_free(host: str, port: int) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.settimeout(1)
-        try:
-            s.bind((host, port))
-            return True
-        except OSError:
-            return False
 
 
 def _plugin_enabled_anywhere() -> bool | None:

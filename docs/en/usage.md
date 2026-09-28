@@ -72,6 +72,43 @@ devbridge doctor --project-dir /path/to/plugin  # + that project's .venv/.devbri
 
 The desktop tool has the same as a **"Run diagnostics"** button, next to *Launch QGIS (debug)*.
 
+## Port conflicts
+
+The usual cause is a previous QGIS session (from an earlier debug run) still sitting on the port. `devbridge
+setup` now checks first: if the configured port is already taken, it picks the next free one nearby, uses it
+for `.devbridge.json` and `.vscode/launch.json` too, and says so in the log - no broken config gets written.
+`devbridge launch` can't silently swap ports like that (VS Code's launch configuration already expects a fixed
+one), so it just prints a warning and launches anyway - you may actually want to attach to the already-running
+session instead. Either way, `devbridge doctor` also reports a busy port directly.
+
+## Linking another plugin from a git checkout
+
+`devbridge setup --project-dir X` prepares a venv and IDE config wherever `X` is, but QGIS itself only loads
+plugins that live inside a profile's `python/plugins/` folder. If your plugin's repo isn't already there
+(it lives elsewhere on disk, or the checkout root isn't the plugin folder itself), `link-plugin` puts it there
+too, the same way `install-plugin` does for DevBridge itself:
+
+```bash
+devbridge link-plugin /path/to/my_plugin_checkout
+devbridge link-plugin . --name my_plugin --profile work --force   # rename it, target one profile, replace if present
+```
+
+Linked (not copied) by default, same as DevBridge installs itself - edits at the source show up in QGIS without
+re-running anything. `--copy` makes an independent copy instead.
+
+## Removing DevBridge / cleaning up a project
+
+```bash
+devbridge uninstall                                    # remove DevBridge from every QGIS profile that has it
+devbridge uninstall --project-dir /path/to/plugin      # + that project's .venv, .devbridge.json, .pycharm-debug/
+                                                        #   and DevBridge's own entries in .vscode/ (never the rest of it)
+devbridge uninstall --project-dir . --keep-plugin      # only clean the project, leave DevBridge installed
+devbridge uninstall --name my_plugin --profile work    # uninstall something set up with link-plugin instead
+```
+
+The desktop tool has a matching **"Remove from my QGIS profile"** button next to *Install / enable* (with a
+confirmation prompt); project cleanup is terminal-only for now.
+
 ## Setting a breakpoint, either way
 
 Once the bridge is listening (Control Panel's *VS Code* tab, or `devbridge launch`) and VS Code is attached

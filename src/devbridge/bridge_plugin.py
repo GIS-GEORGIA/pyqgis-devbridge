@@ -69,10 +69,14 @@ def _remove(target: Path) -> None:
     shutil.rmtree(target)
 
 
-def install(source: Path, plugins_dir: Path, copy: bool = False, force: bool = False) -> str:
-    """Returns ``linked`` | ``copied`` | ``already`` | ``exists``."""
+def install(source: Path, plugins_dir: Path, copy: bool = False, force: bool = False,
+           name: str = PLUGIN_NAME) -> str:
+    """Returns ``linked`` | ``copied`` | ``already`` | ``exists``. ``name`` is
+    the target folder name under ``plugins_dir`` - defaults to DevBridge
+    itself, but this is also what ``devbridge link-plugin`` uses for an
+    arbitrary plugin folder."""
     plugins_dir.mkdir(parents=True, exist_ok=True)
-    target = plugins_dir / PLUGIN_NAME
+    target = plugins_dir / name
 
     if target.exists() or target.is_symlink():
         if not copy and target.resolve() == source.resolve():
@@ -94,14 +98,16 @@ def install(source: Path, plugins_dir: Path, copy: bool = False, force: bool = F
     return "copied"
 
 
-def set_plugin_enabled(ini: Path, name: str = PLUGIN_NAME) -> None:
-    """Set ``[PythonPlugins] <name>=true`` in a QGIS ini, editing lines in
-    place so the rest of the file is left exactly as QGIS wrote it."""
+def set_plugin_enabled(ini: Path, name: str = PLUGIN_NAME, enabled: bool = True) -> None:
+    """Set ``[PythonPlugins] <name>=true`` (or ``=false`` with
+    ``enabled=False``, used by ``devbridge uninstall``) in a QGIS ini,
+    editing lines in place so the rest of the file is left exactly as QGIS
+    wrote it."""
     with open(ini, encoding="utf-8", newline="") as f:  # newline="" keeps CRLF visible
         text = f.read()
     nl = "\r\n" if "\r\n" in text else "\n"
     lines = text.splitlines()
-    entry = f"{name}=true"
+    entry = f"{name}={'true' if enabled else 'false'}"
 
     try:
         start = next(i for i, ln in enumerate(lines) if ln.strip() == "[PythonPlugins]")

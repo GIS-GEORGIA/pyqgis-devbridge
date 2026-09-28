@@ -201,3 +201,22 @@ def test_launch_qgis_without_executable_fails_cleanly(tmp_path: Path, monkeypatc
     msgs = []
     assert launcher.launch_qgis(_qgis(tmp_path), verbose_print=msgs.append, system="Linux") == 1
     assert msgs
+
+
+def test_launch_qgis_warns_but_still_launches_when_port_busy(tmp_path: Path, monkeypatch):
+    """A busy port (typically a still-running earlier QGIS session) should
+    not block launching a new one - just warn, since the user may want to
+    attach to the already-running bridge instead."""
+    monkeypatch.setattr(launcher.shutil, "which", lambda n: "/usr/bin/qgis" if n == "qgis" else None)
+    monkeypatch.setattr(launcher, "port_free", lambda host, port: False)
+
+    def fake_popen(cmd, **kwargs):
+        Path(kwargs["env"]["DEVBRIDGE_READY_FILE"]).write_text("ok")
+        return FakeProcess()
+
+    msgs = []
+    rc = launcher.launch_qgis(_qgis(tmp_path), host="localhost", port=5999, wait_ready=True,
+                              timeout=5, popen=fake_popen, work_dir=tmp_path / "w",
+                              verbose_print=msgs.append, system="Linux")
+    assert rc == 0
+    assert any("5999" in m for m in msgs)

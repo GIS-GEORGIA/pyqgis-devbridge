@@ -10,6 +10,7 @@ from . import debugpy_installer, env_builder, project_config, pycharm_config, vs
 from .detectors import get_detector
 from .detectors.base import QgisInstallation
 from .i18n_util import get_lang, t
+from .netutil import find_free_port, port_free
 
 
 class SetupError(RuntimeError):
@@ -60,6 +61,20 @@ def find_qgis(log: Callable[[str], None] = print, qgis_root: str | Path | None =
     return chosen
 
 
+def _resolve_port(host: str, port: int, log: Callable[[str], None]) -> int:
+    """The requested port, unless something is already listening on it - a
+    stale QGIS session from an earlier debug run is the common cause. Picks
+    the next free one nearby instead of silently writing a config that
+    would fail the moment debugpy tries to bind it."""
+    if port_free(host, port):
+        return port
+    alt = find_free_port(host, port + 1)
+    if alt is None:
+        raise SetupError(t("port_no_free_found", port=port))
+    log(t("port_busy_using_alt", port=port, alt=alt))
+    return alt
+
+
 def run_setup(project_dir: Path, port: int = vscode_config.DEFAULT_PORT,
               venv_name: str = ".venv", log: Callable[[str], None] = print,
               qgis: QgisInstallation | None = None, host: str = "localhost",
@@ -73,6 +88,7 @@ def run_setup(project_dir: Path, port: int = vscode_config.DEFAULT_PORT,
     if plugin_name is None:
         plugin_name = vscode_config.infer_plugin_name(project_dir)
 
+    port = _resolve_port(host, port, log)
     env_builder.build_venv(qgis, venv_path, verbose_print=log)
     debugpy_installer.install_debugpy(qgis, venv_python=venv_python(venv_path), verbose_print=log)
     config_path = project_config.write_project_config(

@@ -9,6 +9,8 @@
     devbridge new my_plugin   # start a NEW plugin (starter files) and prepare it for debugging
     devbridge launch          # start QGIS with the debug bridge already listening (for VS Code's F5)
     devbridge install-plugin  # put the DevBridge QGIS plugin into your profile and enable it
+    devbridge link-plugin PATH  # link any other plugin folder into your QGIS profile and enable it
+    devbridge uninstall       # remove DevBridge from your profile(s) (--project-dir to also clean a project)
     devbridge detect          # just print what was found
     devbridge doctor          # check the whole chain (QGIS, debugpy, plugin, port, .vscode/)
     devbridge --lang ka setup
@@ -20,7 +22,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import __version__, bridge_plugin, config, doctor, launcher, pipeline, profiles, project_config, scaffold, vscode_config
+from . import (__version__, bridge_plugin, config, doctor, launcher, link_plugin, pipeline, profiles,
+              project_config, scaffold, uninstall, vscode_config)
 from .i18n_util import detect_system_lang, set_lang, t
 
 
@@ -156,6 +159,20 @@ def cmd_install_plugin(args: argparse.Namespace) -> int:
         profile=args.profile, copy=args.copy, force=args.force)
 
 
+def cmd_link_plugin(args: argparse.Namespace) -> int:
+    return link_plugin.link_into_profiles(
+        Path(args.path), name=args.name, profile=args.profile, copy=args.copy, force=args.force)
+
+
+def cmd_uninstall(args: argparse.Namespace) -> int:
+    status = 0
+    if not (args.project_dir and args.keep_plugin):
+        status = uninstall.uninstall_plugin(profile=args.profile, name=args.name) or status
+    if args.project_dir:
+        status = uninstall.uninstall_project(Path(args.project_dir)) or status
+    return status
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     project_dir = Path(args.project_dir).resolve() if args.project_dir else None
     qgis = None
@@ -269,6 +286,31 @@ def build_parser() -> argparse.ArgumentParser:
     p_bridge.add_argument("--force", action="store_true",
                            help="Replace an existing DevBridge folder in the profile")
     p_bridge.set_defaults(func=cmd_install_plugin)
+
+    p_link = sub.add_parser("link-plugin",
+                            help="Link (or copy) any plugin folder into your QGIS profile and enable it")
+    p_link.add_argument("path", help="Plugin folder to link in, e.g. a git checkout outside any QGIS profile")
+    p_link.add_argument("--name", default=None,
+                        help="Folder name QGIS sees it under (default: the source folder's own name)")
+    p_link.add_argument("--profile", default=None, help="QGIS profile name (default: 'default')")
+    p_link.add_argument("--copy", action="store_true",
+                        help="Copy instead of linking (edits at the source won't show up in QGIS)")
+    p_link.add_argument("--force", action="store_true",
+                        help="Replace an existing folder of that name in the profile")
+    p_link.set_defaults(func=cmd_link_plugin)
+
+    p_uninstall = sub.add_parser(
+        "uninstall", help="Remove a plugin from your QGIS profile(s), and/or clean up one project's debug setup")
+    p_uninstall.add_argument("--profile", default=None,
+                             help="QGIS profile name (default: every profile that has it)")
+    p_uninstall.add_argument("--name", default=bridge_plugin.PLUGIN_NAME,
+                             help="Plugin folder name to remove (default: DevBridge itself)")
+    p_uninstall.add_argument("--project-dir", default=None,
+                             help="Also remove this project's .venv, .devbridge.json, .pycharm-debug/ "
+                                  "and DevBridge's own .vscode/ entries")
+    p_uninstall.add_argument("--keep-plugin", action="store_true",
+                             help="With --project-dir: only clean the project, don't touch the QGIS profile")
+    p_uninstall.set_defaults(func=cmd_uninstall)
 
     p_doctor = sub.add_parser("doctor", help="Check the whole chain: QGIS, debugpy, the plugin, the port, .vscode/")
     p_doctor.add_argument("--project-dir", default=None,

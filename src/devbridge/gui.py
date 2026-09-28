@@ -14,7 +14,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
-from . import bridge_plugin, config, desktop, doctor, launcher, pipeline, profiles, project_config, scaffold
+from . import bridge_plugin, config, desktop, doctor, launcher, pipeline, profiles, project_config, scaffold, uninstall
 from .i18n_util import detect_system_lang, get_lang, set_lang, t
 
 _POLL_MS = 100
@@ -137,6 +137,8 @@ class DevBridgeApp(ttk.Frame):
         qbox.pack(fill="x", pady=4)
         self.bridge_btn = self._text(ttk.Button(qbox, command=self._install_bridge), "gui_install_bridge")
         self.bridge_btn.pack(side="left")
+        self.uninstall_btn = self._text(ttk.Button(qbox, command=self._uninstall_bridge), "gui_uninstall_bridge")
+        self.uninstall_btn.pack(side="left", padx=(6, 0))
         if bridge_plugin.plugin_source() is None:
             self.bridge_btn.state(["disabled"])
             self._text(ttk.Label(qbox), "gui_bridge_unavailable").pack(side="left", padx=8)
@@ -363,6 +365,17 @@ class DevBridgeApp(ttk.Frame):
         def work():
             try:
                 bridge_plugin.install_into_profiles(log=self._log)
+            except Exception as exc:
+                self._log(f"ERROR: {exc}")
+        threading.Thread(target=work, daemon=True).start()
+
+    def _uninstall_bridge(self) -> None:
+        if not messagebox.askyesno(t("welcome"), t("gui_uninstall_confirm")):
+            return
+
+        def work():
+            try:
+                uninstall.uninstall_plugin(log=self._log)
             except Exception as exc:
                 self._log(f"ERROR: {exc}")
         threading.Thread(target=work, daemon=True).start()

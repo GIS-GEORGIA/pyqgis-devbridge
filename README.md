@@ -66,6 +66,13 @@ Alpha / experimental. Runs on QGIS 3.40+ (Qt5) and QGIS 4 (Qt6) from one build. 
 including what's deliberately *not* automated (PyCharm's version-pinned
 `pydevd-pycharm`, and stopping a `debugpy` listener mid-session).
 
+## Releasing
+
+Bump `devbridge.__version__` / `pyproject.toml` / `qgis_plugin/metadata.txt`, update `CHANGELOG.md`, commit,
+then `git tag vX.Y.Z && git push origin vX.Y.Z`. The [release workflow](.github/workflows/release.yml) builds
+and tests the wheel and `DevBridge.zip`, checks the tag matches `devbridge.__version__`, and publishes both as
+a GitHub Release. Vendoring the zip into `GIS-GEORGIA/qgis-plugins-repo` (plugins.qgis.ge) stays a manual step.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

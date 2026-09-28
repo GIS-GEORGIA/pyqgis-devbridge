@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 ### Added
+- Automated GitHub Release: pushing a `vX.Y.Z` tag builds and tests the wheel and `DevBridge.zip`, checks the
+  tag matches `devbridge.__version__`, and publishes both as release assets
+  ([`.github/workflows/release.yml`](.github/workflows/release.yml)) - replacing doing that by hand. Vendoring
+  into `qgis-plugins-repo` (plugins.qgis.ge) stays a manual step on purpose.
+- `devbridge uninstall`: removes the DevBridge plugin from every QGIS profile it's installed in and disables
+  it in the ini (`--name`/`--profile` to target something else, e.g. set up with `link-plugin`); with
+  `--project-dir` also removes that project's `.venv`, `.devbridge.json`, `.pycharm-debug/` and *only*
+  DevBridge's own entries inside `.vscode/{launch,tasks}.json` by name/label, never the rest of a user's
+  `.vscode/` content (`--keep-plugin` to clean just the project). A "Remove from my QGIS profile" button
+  (with a confirmation prompt) was added to the desktop tool next to "Install / enable".
+- `devbridge link-plugin PATH`: links (or `--copy`s) any plugin folder - typically a git checkout that isn't
+  itself inside a QGIS profile - into `python/plugins/` and enables it, generalizing what `install-plugin`
+  already did for DevBridge itself to any plugin and any target name (`--name`/`--profile`/`--force`).
+- Port-conflict handling, for the common case of a previous QGIS session (from an earlier debug run) still
+  holding the configured port: `devbridge setup` now checks first and, if busy, picks the next free port
+  automatically and uses it consistently for `.devbridge.json` and `.vscode/launch.json` too, instead of
+  writing a config that would fail the moment debugpy tries to bind it. `devbridge launch` can't silently swap
+  ports the same way (VS Code's launch configuration already expects a fixed one), so it prints a warning and
+  launches anyway. New shared `netutil.port_free`/`find_free_port`, also now backing `doctor`'s port check.
 - `devbridge doctor` (`--project-dir`, `--port`): checks the whole chain end to end and prints a plain
   OK/FAIL line with a one-line hint for each - QGIS found, its Python can `import qgis.core`, `debugpy`
   installed (in QGIS's Python and, with `--project-dir`, the project's `.venv`), the DevBridge plugin

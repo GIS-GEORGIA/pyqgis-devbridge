@@ -1,0 +1,50 @@
+name: Release
+
+# Triggered by pushing a version tag (git tag v0.5.0 && git push origin v0.5.0)
+# once devbridge.__version__ / pyproject.toml have already been bumped to
+# match in a regular commit. Builds the same artifacts CI already builds and
+# verifies on every push, then publishes them as a GitHub Release - this
+# replaces doing that last step by hand.
+#
+# Vendoring the built DevBridge.zip into GIS-GEORGIA/qgis-plugins-repo
+# (plugins.qgis.ge) is a separate, deliberately manual step: that repo
+# serves other plugins too and its own tools/build.py + smoke test against
+# real QGIS need a human in the loop.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: pytest -v
+      - run: python make_plugin_zip.py
+      - run: pip wheel . --no-deps -w dist
+
+      - name: Tag must match devbridge.__version__
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(python -c "import devbridge; print(devbridge.__version__)")
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match devbridge.__version__ ($pkg) - bump it first." >&2
+            exit 1
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: DevBridge ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/DevBridge.zip
+            dist/*.whl
