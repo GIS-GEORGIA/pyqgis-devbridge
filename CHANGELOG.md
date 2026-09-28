@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 ### Added
+- Third VS Code launch configuration, "PyQGIS: Debug current file (no QGIS)": a plain `request: launch` config
+  (the venv's interpreter, `program: ${file}`) for a standalone script that only needs `qgis.core`/
+  `qgis.analysis` (`QgsApplication([], False)` + `initQgis()`), no QGIS session/bridge/port at all - confirmed
+  for real against an OSGeo4W and a standalone QGIS install that the prepared venv resolves its own prefix path
+  without `QGIS_PREFIX_PATH`/`setPrefixPath()`; setting `QGIS_PREFIX_PATH` explicitly was tried first and
+  instead broke the `qgis.core` import ("DLL load failed"), so the config deliberately sets neither.
 - Non-local `--host` warning: `setup` and `launch` print a warning when the host isn't `localhost`/`127.0.0.1`/
   `::1` (a real IP, `0.0.0.0`, a hostname), since `debugpy`/`pydevd` accept whoever connects with no
   authentication of their own; `devbridge doctor` flags the same thing when `.devbridge.json` has one. New

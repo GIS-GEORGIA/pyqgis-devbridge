@@ -129,6 +129,29 @@ Once the bridge is listening (Control Panel's *VS Code* tab, or `devbridge launc
 attach*): set breakpoints in your plugin code or in a standalone script, trigger that code path from inside
 QGIS (run your plugin's action, or run a script through the Python console), and execution pauses there.
 
+## Debugging a standalone script (no QGIS needed)
+
+`devbridge setup` also writes a third VS Code launch configuration, **"PyQGIS: Debug current file (no QGIS)"**
+- for a plain script (a processing algorithm, a batch conversion, a unit test) that only needs `qgis.core`/
+`qgis.analysis`, with no QGIS session, bridge or port involved at all. Open the script, pick that configuration
+in Run and Debug, press F5 (or the green triangle) - breakpoints work immediately. All it needs is:
+
+```python
+from qgis.core import QgsApplication
+
+qgs = QgsApplication([], False)   # False = no GUI
+qgs.initQgis()
+try:
+    ...                            # your code
+finally:
+    qgs.exitQgis()
+```
+
+No `QgsApplication.setPrefixPath(...)` and no `QGIS_PREFIX_PATH` needed - confirmed for real against both an
+OSGeo4W and a standalone QGIS install: the venv `devbridge setup` builds already resolves it on its own.
+Setting `QGIS_PREFIX_PATH` by hand was tried first and instead broke the `qgis.core` import outright ("DLL load
+failed"), so don't add it unless something specific tells you to.
+
 ### Without the Control Panel
 
 Everything above can also be done from the plugin's menu directly, without opening the panel:

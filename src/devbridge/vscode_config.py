@@ -25,6 +25,7 @@ from .paths import qgis_user_plugins_dir
 DEFAULT_PORT = 5678
 ATTACH_NAME = "PyQGIS: Attach to running QGIS"
 LAUNCH_NAME = "PyQGIS: Launch QGIS + attach"
+HEADLESS_NAME = "PyQGIS: Debug current file (no QGIS)"
 TASK_LABEL = "devbridge: launch QGIS (debug)"
 
 
@@ -100,6 +101,28 @@ def build_launch_configurations(host: str, port: int, plugin_name: str | None,
     return [attach, launch]
 
 
+def build_headless_configuration(python_exe: str) -> dict:
+    """A plain "launch" config for a standalone script that just needs
+    `import qgis.core` and no running QGIS at all - `QgsApplication([],
+    False)` + `initQgis()` is enough on its own, no QGIS_PREFIX_PATH or
+    `setPrefixPath()` needed: confirmed for real against both an OSGeo4W
+    and a standalone QGIS install, `QgsApplication` finds its own prefix
+    from where its compiled core module sits once the venv's `pyvenv.cfg`
+    points `home` at the QGIS-bundled Python (`env_builder._patch_pyvenv_
+    cfg`). Setting QGIS_PREFIX_PATH explicitly was tried first and instead
+    broke `import qgis.core` outright ("DLL load failed") - so this
+    config deliberately sets nothing beyond the interpreter itself."""
+    return {
+        "name": HEADLESS_NAME,
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal",
+        "justMyCode": False,
+        "python": python_exe,
+    }
+
+
 def build_task(devbridge_python: str, lang: str | None) -> dict:
     args = ["-m", "devbridge"]
     if lang:
@@ -140,6 +163,7 @@ def write_vscode_config(project_dir: Path, venv_path: Path, port: int = DEFAULT_
         configs = d.setdefault("configurations", [])
         for cfg in build_launch_configurations(host, port, plugin_name, profile):
             _upsert(configs, "name", cfg)
+        _upsert(configs, "name", build_headless_configuration(interpreter))
         return d
 
     def _tasks(d: dict) -> dict:

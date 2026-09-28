@@ -23,9 +23,13 @@ def test_fresh_write_creates_all_three_files(tmp_path: Path):
     settings, launch, tasks = _write(tmp_path, port=5700, host="127.0.0.1", lang="ka",
                                      devbridge_python="/py/python")
     names = [c["name"] for c in launch["configurations"]]
-    assert names == [vc.ATTACH_NAME, vc.LAUNCH_NAME]
+    assert names == [vc.ATTACH_NAME, vc.LAUNCH_NAME, vc.HEADLESS_NAME]
     assert launch["configurations"][0]["connect"] == {"host": "127.0.0.1", "port": 5700}
     assert launch["configurations"][1]["preLaunchTask"] == vc.TASK_LABEL
+    headless = launch["configurations"][2]
+    assert headless["request"] == "launch" and headless["program"] == "${file}"
+    assert headless["python"] == str(vc._venv_interpreter(tmp_path / ".venv"))
+
     task = tasks["tasks"][0]
     assert task["label"] == vc.TASK_LABEL and task["command"] == "/py/python"
     assert task["args"][:4] == ["-m", "devbridge", "--lang", "ka"]
@@ -44,7 +48,7 @@ def test_existing_user_entries_are_kept_and_ours_are_not_duplicated(tmp_path: Pa
     _write(tmp_path)
     settings, launch, tasks = _write(tmp_path)     # second run must be idempotent
     assert settings["editor.tabSize"] == 2
-    assert [c["name"] for c in launch["configurations"]] == ["mine", vc.ATTACH_NAME, vc.LAUNCH_NAME]
+    assert [c["name"] for c in launch["configurations"]] == ["mine", vc.ATTACH_NAME, vc.LAUNCH_NAME, vc.HEADLESS_NAME]
     assert [t["label"] for t in tasks["tasks"]] == ["build", vc.TASK_LABEL]
 
 
@@ -88,6 +92,19 @@ def test_explicit_plugin_name_wins_over_inference(tmp_path: Path):
     project.mkdir(parents=True)
     _, launch, _ = _write(project, plugin_name="other_name")
     assert launch["configurations"][0]["pathMappings"][0]["remoteRoot"].endswith("other_name")
+
+
+def test_build_headless_configuration_needs_no_qgis_or_bridge_settings():
+    cfg = vc.build_headless_configuration("/venv/bin/python")
+    assert cfg == {
+        "name": vc.HEADLESS_NAME,
+        "type": "debugpy",
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal",
+        "justMyCode": False,
+        "python": "/venv/bin/python",
+    }
 
 
 def test_project_config_roundtrip_and_fallbacks(tmp_path: Path):

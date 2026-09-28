@@ -80,7 +80,7 @@ def _clean_json(path: Path, list_key: str, entry_key: str, names: tuple[str, ...
 def _clean_vscode(project_dir: Path, log: Callable[[str], None]) -> None:
     vscode_dir = project_dir / ".vscode"
     _clean_json(vscode_dir / "launch.json", "configurations", "name",
-               (vscode_config.ATTACH_NAME, vscode_config.LAUNCH_NAME), log)
+               (vscode_config.ATTACH_NAME, vscode_config.LAUNCH_NAME, vscode_config.HEADLESS_NAME), log)
     _clean_json(vscode_dir / "tasks.json", "tasks", "label", (vscode_config.TASK_LABEL,), log)
 
 

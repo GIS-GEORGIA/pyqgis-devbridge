@@ -133,6 +133,29 @@ devbridge uninstall --name my_plugin --profile work    # link-plugin-ით დ�
 გამოიყენეთ): დასვით breakpoint-ები თქვენს plugin-ის კოდში ან სკრიპტში, გაუშვით შესაბამისი მოქმედება
 QGIS-დან (plugin-ის action ან სკრიპტი Python კონსოლიდან) — შესრულება იქ გაჩერდება.
 
+## Standalone სკრიპტის დებაგინგი (QGIS არ სჭირდება)
+
+`devbridge setup` მესამე VS Code launch კონფიგურაციასაც წერს — **"PyQGIS: Debug current file (no QGIS)"** —
+უბრალო სკრიპტისთვის (processing ალგორითმი, batch კონვერტაცია, unit ტესტი), რომელსაც მხოლოდ `qgis.core`/
+`qgis.analysis` სჭირდება, QGIS სესიის, ხიდის ან პორტის გარეშე. გახსენით სკრიპტი, აირჩიეთ ეს კონფიგურაცია Run
+and Debug-ში, დააჭირეთ F5-ს (ან მწვანე სამკუთხედს) — breakpoint-ები მაშინვე მუშაობს. საჭიროა მხოლოდ:
+
+```python
+from qgis.core import QgsApplication
+
+qgs = QgsApplication([], False)   # False = GUI-ს გარეშე
+qgs.initQgis()
+try:
+    ...                            # თქვენი კოდი
+finally:
+    qgs.exitQgis()
+```
+
+`QgsApplication.setPrefixPath(...)` და `QGIS_PREFIX_PATH` არ სჭირდება — რეალურად დადასტურებულია ორივეზე,
+OSGeo4W-ზეც და სტანდარტულ QGIS ინსტალაციაზეც: venv, რომელსაც `devbridge setup` აწყობს, თავად პოულობს ამას.
+`QGIS_PREFIX_PATH`-ის ხელით დაყენება ჯერ ვცადეთ და პირიქით, `qgis.core`-ის იმპორტი გატეხა ("DLL load
+failed") — ამიტომ არ დაამატოთ, თუ სპეციალურად რამემ არ მოგახსენათ საჭიროება.
+
 ### მართვის პანელის გარეშე
 
 ზემოთქმული პანელის გახსნის გარეშეც შეიძლება, პირდაპირ plugin-ის მენიუდან: **Plugins → DevBridge → დებაგ

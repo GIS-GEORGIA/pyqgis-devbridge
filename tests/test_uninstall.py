@@ -92,6 +92,7 @@ def test_uninstall_project_cleans_only_our_vscode_entries(tmp_path: Path):
         "configurations": [
             {"name": vscode_config.ATTACH_NAME},
             {"name": vscode_config.LAUNCH_NAME},
+            {"name": vscode_config.HEADLESS_NAME},
             {"name": "My own debug config"},
         ],
     }
