@@ -170,3 +170,29 @@ def test_list_all_falls_back_to_the_running_profile_only(tmp_path: Path):
     _plugin(weird, "second", "duo")
     assert sorted(e.name for e in profile_plugins.list_all(weird / "default")) == ["duo", "solo"]
     assert profile_plugins.new_plugin_parent(weird / "default") == weird / "default" / "python" / "plugins"
+
+
+def test_picker_handles_eof_gracefully(tmp_path: Path, monkeypatch):
+    """Same isatty()-lies scenario as the QGIS picker, for the plugin picker
+    and the new-plugin name prompt."""
+    root = tmp_path / "QGIS3" / "profiles"
+    for name in ("one", "two"):
+        _plugin(root, "default", name)
+    monkeypatch.setattr(profiles, "profile_roots", lambda: [root])
+    monkeypatch.setattr(cli.sys.stdin, "isatty", lambda: True)
+
+    def raise_eof(_prompt=""):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", raise_eof)
+    assert cli._resolve_project_dir(_args()) is None
+
+
+def test_new_name_prompt_handles_eof_gracefully(monkeypatch):
+    monkeypatch.setattr(cli.sys.stdin, "isatty", lambda: True)
+
+    def raise_eof(_prompt=""):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", raise_eof)
+    assert cli._new_plugin(None, None) is None

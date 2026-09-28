@@ -22,13 +22,42 @@ def venv_python(venv_path: Path) -> Path:
     return venv_path / "bin" / "python"
 
 
-def find_qgis(log: Callable[[str], None] = print) -> QgisInstallation:
+def find_all_qgis(log: Callable[[str], None] = print) -> list[QgisInstallation]:
+    """Every QGIS install this platform's detector can find, most-preferred
+    first. Some machines genuinely have several side by side (OSGeo4W plus
+    one or more standalone versions on Windows)."""
     log(t("detecting_qgis"))
-    qgis = get_detector().find_qgis()
-    if not qgis:
+    detector = get_detector()
+    finder = getattr(detector, "find_all_qgis", None)
+    if finder is not None:
+        return finder()
+    single = detector.find_qgis()
+    return [single] if single else []
+
+
+def find_qgis(log: Callable[[str], None] = print, qgis_root: str | Path | None = None,
+              ask: Callable[[list[QgisInstallation]], "QgisInstallation | None"] | None = None
+              ) -> QgisInstallation:
+    """`qgis_root` picks a specific install by its root path (error if not
+    found there). Otherwise: one install picks itself; several ask `ask`
+    (an interactive picker) if given, else the most-preferred one - same
+    silent default as before this function took an install-choosing hint,
+    so no existing caller's behaviour changes."""
+    installs = find_all_qgis(log)
+    if qgis_root is not None:
+        target = Path(qgis_root).resolve()
+        match = next((q for q in installs if Path(q.root).resolve() == target), None)
+        if match is None:
+            raise SetupError(t("qgis_root_not_found", root=qgis_root))
+        log(t("qgis_found", path=match.root))
+        return match
+    if not installs:
         raise SetupError(t("qgis_not_found"))
-    log(t("qgis_found", path=qgis.root))
-    return qgis
+    chosen = installs[0]
+    if len(installs) > 1 and ask is not None:
+        chosen = ask(installs) or chosen
+    log(t("qgis_found", path=chosen.root))
+    return chosen
 
 
 def run_setup(project_dir: Path, port: int = vscode_config.DEFAULT_PORT,

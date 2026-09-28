@@ -47,6 +47,39 @@ def test_windows_detector_finds_versioned_standalone_install(tmp_path: Path, mon
     assert result is not None and result.root == root
 
 
+def _make_windows_install(root: Path, flavour: str = "qgis") -> None:
+    (root / "apps" / flavour / "python" / "qgis").mkdir(parents=True)
+    (root / "apps" / "Python312").mkdir(parents=True)
+    (root / "apps" / "Python312" / "python.exe").write_text("")
+
+
+def test_windows_find_all_qgis_returns_every_install(tmp_path: Path, monkeypatch):
+    """The user's own machine has four QGIS installs side by side (OSGeo4W
+    plus three standalone versions) - find_qgis() must not stop at the first
+    one when something needs to choose among them."""
+    a, b = tmp_path / "OSGeo4W", tmp_path / "QGIS 3.44.5"
+    _make_windows_install(a)
+    _make_windows_install(b, "qgis-ltr")
+    monkeypatch.setattr(win_detector, "_CANDIDATE_ROOTS", [str(a)])
+    monkeypatch.setattr(win_detector, "_env_root", lambda: None)
+    monkeypatch.setattr(win_detector, "_program_files_roots", lambda: [str(b)])
+
+    found = win_detector.find_all_qgis()
+    assert [q.root for q in found] == [a, b]
+    assert win_detector.find_qgis() == found[0]           # unchanged: first match wins by default
+
+
+def test_windows_find_all_qgis_deduplicates_and_skips_empty(tmp_path: Path, monkeypatch):
+    a = tmp_path / "OSGeo4W"
+    _make_windows_install(a)
+    monkeypatch.setattr(win_detector, "_CANDIDATE_ROOTS", [str(a), str(tmp_path / "nope")])
+    monkeypatch.setattr(win_detector, "_env_root", lambda: str(a))   # same root, listed twice
+    monkeypatch.setattr(win_detector, "_program_files_roots", lambda: [])
+
+    found = win_detector.find_all_qgis()
+    assert len(found) == 1 and found[0].root == a
+
+
 from devbridge.detectors import macos as mac_detector  # noqa: E402
 
 

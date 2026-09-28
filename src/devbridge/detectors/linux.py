@@ -81,3 +81,10 @@ def find_qgis() -> QgisInstallation | None:
             version_hint="binary-only (manual PYTHONPATH needed)",
         )
     return None
+
+
+def find_all_qgis() -> list[QgisInstallation]:
+    """Linux systems realistically have one QGIS on PATH; kept as a list for a
+    uniform cross-platform API (Windows can have several side by side)."""
+    found = find_qgis()
+    return [found] if found else []

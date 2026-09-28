@@ -14,7 +14,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
-from . import bridge_plugin, config, desktop, launcher, pipeline, profiles, project_config, scaffold
+from . import bridge_plugin, config, desktop, doctor, launcher, pipeline, profiles, project_config, scaffold
 from .i18n_util import detect_system_lang, get_lang, set_lang, t
 
 _POLL_MS = 100
@@ -26,6 +26,7 @@ class DevBridgeApp(ttk.Frame):
         self.master = master
         self._cfg = config.load()
         self._plugins: list[profiles.ProfilePlugin] = []
+        self._qgis_installs: list = []      # pipeline.QgisInstallation, most-preferred first
         self._logq: queue.Queue[str] = queue.Queue()
         self._labels: dict[str, list] = {}   # i18n key -> widgets whose text it drives
 
@@ -42,6 +43,7 @@ class DevBridgeApp(ttk.Frame):
 
         self._build_widgets()
         self.pack(fill="both", expand=True)
+        self._load_qgis_installs()
         self._load_plugins()
         self._apply_texts()
         self.after(_POLL_MS, self._drain_log)
@@ -61,6 +63,14 @@ class DevBridgeApp(ttk.Frame):
         lang_box.pack(side="left", padx=4)
         lang_box.bind("<<ComboboxSelected>>", self._on_lang_change)
         self._text(ttk.Button(top, command=self._show_guide), "gui_guide_btn").pack(side="right")
+
+        # only matters when more than one QGIS is installed; harmless to show otherwise
+        qgis_row = ttk.Frame(self)
+        qgis_row.pack(fill="x", pady=(0, 4))
+        self._text(ttk.Label(qgis_row), "gui_qgis_install").pack(side="left")
+        self.qgis_box = ttk.Combobox(qgis_row, state="readonly", width=52)
+        self.qgis_box.pack(side="left", padx=4)
+        self._text(ttk.Button(qgis_row, command=self._load_qgis_installs), "gui_refresh").pack(side="left")
 
         # settings shared with the QGIS plugin
         box = self._text(ttk.LabelFrame(self, padding=8), "gui_settings")
@@ -116,7 +126,8 @@ class DevBridgeApp(ttk.Frame):
         self.open_btns = ttk.Frame(self.btn_row)
         self._text(ttk.Button(self.open_btns, command=self._open_folder), "gui_open_folder").pack(side="left", padx=(0, 6))
         self._text(ttk.Button(self.open_btns, command=self._open_vscode), "gui_open_vscode").pack(side="left", padx=(0, 6))
-        self._text(ttk.Button(self.open_btns, command=self._launch_qgis), "gui_launch_qgis").pack(side="left")
+        self._text(ttk.Button(self.open_btns, command=self._launch_qgis), "gui_launch_qgis").pack(side="left", padx=(0, 6))
+        self._text(ttk.Button(self.open_btns, command=self._run_doctor), "gui_doctor").pack(side="left")
         self.open_btns.pack(side="left")
         self._proj_frame = proj
         self._show_mode()
@@ -180,6 +191,18 @@ class DevBridgeApp(ttk.Frame):
         if self.run_btn not in self._labels[key]:
             self._labels[key].append(self.run_btn)
         self.run_btn.configure(text=t(key))
+
+    def _load_qgis_installs(self) -> None:
+        self._qgis_installs = pipeline.find_all_qgis(log=lambda _msg: None)
+        self.qgis_box["values"] = (
+            [str(q.root) + ("  (default)" if i == 0 else "") for i, q in enumerate(self._qgis_installs)]
+            or [t("gui_no_qgis_found")]
+        )
+        self.qgis_box.current(0)
+
+    def _selected_qgis(self):
+        idx = self.qgis_box.current()
+        return self._qgis_installs[idx] if 0 <= idx < len(self._qgis_installs) else None
 
     def _load_plugins(self) -> None:
         self._plugins = profiles.find_plugins()
@@ -268,11 +291,12 @@ class DevBridgeApp(ttk.Frame):
         path = self._project_path()
         if path is None:
             return
-        threading.Thread(target=self._launch_qgis_worker, args=(path,), daemon=True).start()
+        qgis = self._selected_qgis()      # read the Tk widget here, on the main thread, not in the worker
+        threading.Thread(target=self._launch_qgis_worker, args=(path, qgis), daemon=True).start()
 
-    def _launch_qgis_worker(self, path: Path) -> None:
+    def _launch_qgis_worker(self, path: Path, qgis) -> None:
         try:
-            qgis = pipeline.find_qgis(self._log)
+            qgis = qgis or pipeline.find_qgis(self._log)
             cfg = project_config.read_project_config(path)
             code = launcher.launch_qgis(qgis, host=cfg["host"], port=cfg["port"],
                                         wait_ready=True, verbose_print=self._log)
@@ -280,6 +304,19 @@ class DevBridgeApp(ttk.Frame):
                 self._log(t("gui_launch_failed"))
         except pipeline.SetupError as exc:
             self._log(str(exc))
+
+    def _run_doctor(self) -> None:
+        """Checks the whole chain (QGIS, debugpy, the plugin, the port, and
+        this project's .venv/.devbridge.json/.vscode if one is selected)."""
+        path = self.project_dir.get().strip() or None
+        cfg = self._settings_from_form()
+        port = cfg["port"] if cfg else None
+        qgis = self._selected_qgis()      # read the Tk widget here, on the main thread, not in the worker
+        threading.Thread(target=self._doctor_worker, args=(path, port, qgis), daemon=True).start()
+
+    def _doctor_worker(self, path: str | None, port: int | None, qgis) -> None:
+        checks = doctor.run_checks(project_dir=path, port=port, qgis=qgis, log=self._log)
+        doctor.print_report(checks, log=self._log)
 
     # --- background work ------------------------------------------------------
     def _log(self, msg: str) -> None:
@@ -308,12 +345,14 @@ class DevBridgeApp(ttk.Frame):
         self._cfg = cfg
         self._persist()
         self.run_btn.state(["disabled"])
-        threading.Thread(target=self._setup_worker, args=(path, cfg["port"]), daemon=True).start()
+        # Read every Tk widget/variable here, on the main thread - not in the worker thread below.
+        qgis, is_new = self._selected_qgis(), self.mode.get() == "new"
+        threading.Thread(target=self._setup_worker, args=(path, cfg["port"], qgis, is_new), daemon=True).start()
 
-    def _setup_worker(self, path: Path, port: int) -> None:
+    def _setup_worker(self, path: Path, port: int, qgis, is_new: bool) -> None:
         try:
-            pipeline.run_setup(path, port=port, log=self._log)
-            if self.mode.get() == "new":
+            pipeline.run_setup(path, port=port, log=self._log, qgis=qgis)
+            if is_new:
                 self._log(t("new_next_steps"))
         except Exception as exc:  # surfaced in the log pane, not a stack-trace dialog
             self._log(f"ERROR: {exc}")

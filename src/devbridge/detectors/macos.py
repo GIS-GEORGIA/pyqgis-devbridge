@@ -74,3 +74,12 @@ def find_qgis() -> QgisInstallation | None:
                 version_hint="system (import probe)",
             )
     return None
+
+
+def find_all_qgis() -> list[QgisInstallation]:
+    """Kept as a list for a uniform cross-platform API (Windows can have
+    several installs side by side); not yet worth enumerating every
+    QGIS*.app bundle here since this detector itself is unverified on real
+    macOS hardware."""
+    found = find_qgis()
+    return [found] if found else []

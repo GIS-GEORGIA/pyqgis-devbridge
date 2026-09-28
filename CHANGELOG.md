@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 ### Added
+- `devbridge doctor` (`--project-dir`, `--port`): checks the whole chain end to end and prints a plain
+  OK/FAIL line with a one-line hint for each - QGIS found, its Python can `import qgis.core`, `debugpy`
+  installed (in QGIS's Python and, with `--project-dir`, the project's `.venv`), the DevBridge plugin
+  installed/enabled, the port free, `.devbridge.json` and `.vscode/launch.json` present. A "Run diagnostics"
+  button in the desktop tool does the same. On Windows, checking a QGIS-bundled interpreter uses its own
+  `python-qgis[-<edition>].bat` wrapper - a bare `import qgis.core` on that interpreter, or reconstructing
+  the wrapper's PATH/PYTHONPATH/`os.add_dll_directory` by hand, both failed against a real OSGeo4W install.
+- Choosing which QGIS to use, for the (not unusual) case of several installed side by side - this machine
+  has four. `devbridge detect` now lists every install found, not just the first; `--qgis-root PATH` on
+  `setup`/`new`/`launch`/`doctor` targets one specifically; an interactive terminal is asked (numbered
+  picker) when several are found and neither is given; the desktop tool has a "QGIS:" dropdown. Detectors
+  gained `find_all_qgis()` (Windows enumerates every install; Linux/macOS wrap their single result for a
+  uniform API).
+
 - Control Panel: a "Reload plugin" picker sits above the tabs (visible regardless of which one is
   open) - pick a plugin already enabled in this QGIS session, press "Reload in QGIS", and its
   latest code runs immediately (`qgis.utils.reloadPlugin`, the same mechanism the separate
@@ -54,6 +68,17 @@
   PyCharm Bridge" plugin menu action. Manual `.pycharm-debug/` steps
   remain as the documented fallback for setups it can't detect.
 ### Fixed
+- Windows detector: `bin_dirs` (the DLL search path used both for a venv's `sitecustomize.py` and by
+  `doctor`) hardcoded `apps/qgis/bin`, missing `apps/qgis-ltr/bin` entirely on an LTR/"-ltr" edition install
+  - confirmed against a real OSGeo4W "qgis-ltr" install, where the directory holding `qgis_core.dll` itself
+    was never on the search path. Now derived from the same install's own detected edition.
+- Desktop GUI: `_selected_qgis()`/`self.mode.get()` (Tk widgets/variables) were read from inside background
+  worker threads (setup, launch, and now doctor) - Tkinter is not thread-safe there and this could raise
+  `RuntimeError: main thread is not in main loop`. Now read on the main thread before the thread starts.
+- The interactive pickers (plugin, QGIS install, new-plugin name) called `input()` after checking
+  `sys.stdin.isatty()`, which can still lie in some wrapped/piped terminals; a subsequent EOF crashed with
+  an uncaught `EOFError` instead of falling back to the non-interactive default.
+
 - A real (non-editable) wheel silently dropped the `i18n/*.json` files - `pip install -e .`, used throughout this
   repo's own testing, never caught it, because an editable install just points back at the source tree. Confirmed
   by building an actual wheel and installing it into a clean venv, both before (missing files, `FileNotFoundError`

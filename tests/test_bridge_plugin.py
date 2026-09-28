@@ -77,3 +77,27 @@ def test_profile_dirs_only_existing_default(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(bp.profiles, "profile_roots", lambda: [q3, q4])
     assert bp.profile_dirs() == [q3 / "default"]
     assert bp.profile_dirs("other") == [q3 / "other"]
+
+
+def test_is_plugin_enabled_reads_true_false_and_missing(tmp_path: Path):
+    ini = tmp_path / "QGIS3.ini"
+    ini.write_text("[PythonPlugins]\nDevBridge=true\nother_plugin=false\n\n[Other]\nDevBridge=false\n",
+                   encoding="utf-8")
+    assert bp.is_plugin_enabled(ini) is True
+    assert bp.is_plugin_enabled(ini, "other_plugin") is False
+    assert bp.is_plugin_enabled(ini, "never_mentioned") is None       # key absent, not "disabled"
+
+
+def test_is_plugin_enabled_missing_section_or_file(tmp_path: Path):
+    ini = tmp_path / "QGIS3.ini"
+    ini.write_text("[General]\nx=1\n", encoding="utf-8")
+    assert bp.is_plugin_enabled(ini) is None
+    assert bp.is_plugin_enabled(tmp_path / "does_not_exist.ini") is None
+
+
+def test_enable_then_is_enabled_round_trip(tmp_path: Path):
+    ini = tmp_path / "QGIS3.ini"
+    ini.write_text("[General]\nx=1\n", encoding="utf-8")
+    assert bp.is_plugin_enabled(ini) is None
+    bp.set_plugin_enabled(ini)
+    assert bp.is_plugin_enabled(ini) is True

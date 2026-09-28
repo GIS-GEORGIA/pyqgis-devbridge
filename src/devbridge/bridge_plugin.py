@@ -119,6 +119,26 @@ def set_plugin_enabled(ini: Path, name: str = PLUGIN_NAME) -> None:
         f.write(nl.join(lines) + nl)
 
 
+def is_plugin_enabled(ini: Path, name: str = PLUGIN_NAME) -> bool | None:
+    """None when the ini has no `[PythonPlugins] <name>=` entry at all -
+    QGIS just hasn't recorded a choice yet, not necessarily "disabled"."""
+    try:
+        with open(ini, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return None
+    try:
+        start = next(i for i, ln in enumerate(lines) if ln.strip() == "[PythonPlugins]")
+    except StopIteration:
+        return None
+    end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("[")), len(lines))
+    for i in range(start + 1, end):
+        key, _, value = lines[i].partition("=")
+        if key.strip() == name:
+            return value.strip().lower() in ("true", "1", "yes")
+    return None
+
+
 def find_ini(profile_dir: Path) -> Path | None:
     for name in ("QGIS3.ini", "QGIS4.ini"):
         ini = profile_dir / "QGIS" / name

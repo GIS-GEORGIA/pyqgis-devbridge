@@ -49,6 +49,29 @@ against a real QGIS 3.44.5 (standalone install and OSGeo4W).
 Settings (language, ports) are stored in one file shared by the panel, the desktop tool and the
 `devbridge` command. Its location is shown on the *Desktop tool* tab.
 
+## Several QGIS installs on one machine
+
+If more than one QGIS is found (OSGeo4W plus one or more standalone versions is common on Windows),
+`devbridge detect` lists every one instead of just the first; the desktop tool has a **"QGIS:"** dropdown
+above everything else; `--qgis-root PATH` on `setup`/`new`/`launch`/`doctor` targets a specific one from a
+terminal (interactive terminals are asked with a numbered picker when several are found and neither this
+flag nor a single unambiguous install is available). Left alone, the first one found is used, exactly as
+before this existed.
+
+## When something isn't working: `devbridge doctor`
+
+Checks the whole chain and prints a plain `[OK]`/`[FAIL]` line with a one-line hint for each: QGIS found,
+its Python can `import qgis.core`, `debugpy` installed (in QGIS's Python, and in a project's `.venv` too
+with `--project-dir`), the DevBridge plugin installed and enabled, the configured port free,
+`.devbridge.json` and `.vscode/launch.json` present.
+
+```bash
+devbridge doctor                              # QGIS/debugpy/plugin/port only
+devbridge doctor --project-dir /path/to/plugin  # + that project's .venv/.devbridge.json/.vscode
+```
+
+The desktop tool has the same as a **"Run diagnostics"** button, next to *Launch QGIS (debug)*.
+
 ## Setting a breakpoint, either way
 
 Once the bridge is listening (Control Panel's *VS Code* tab, or `devbridge launch`) and VS Code is attached
