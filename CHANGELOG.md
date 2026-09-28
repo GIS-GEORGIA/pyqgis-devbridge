@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 ### Added
+- Control Panel: a "Reload plugin" picker sits above the tabs (visible regardless of which one is
+  open) - pick a plugin already enabled in this QGIS session, press "Reload in QGIS", and its
+  latest code runs immediately (`qgis.utils.reloadPlugin`, the same mechanism the separate
+  "Plugin Reloader" plugin uses), no QGIS restart and no extra plugin needed. Plugin 0.2.3.
+
 - `devbridge launch` (`--wait-ready`, `--wait-for-client`, `--host`/`--port`, `--qgis-project`): starts QGIS with
   the debug bridge already listening, via `qgis --code <bootstrap>` - so VS Code's F5 attaches to a QGIS that is
   already running, without a manual "Start Debug Bridge" click in the QGIS menu first. Confirmed against a real

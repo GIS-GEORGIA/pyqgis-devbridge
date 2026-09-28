@@ -158,6 +158,32 @@ def main() -> int:
     panel.new_name.setText("Bad Name")
     check(panel._target_path(create=True) is None and "not a valid plugin name" in warned[-1], "a bad name is explained")
     panel._just_created = False
+
+    # 'Reload plugin' strip: register hello_new the way QGIS itself does (qgis.utils, not our
+    # own classFactory call above) so it lands in qgis.utils.active_plugins, then reload it.
+    import qgis.utils as _qu
+    from DevBridge import profile_plugins as _pp
+    _qu.iface = iface   # startPlugin() reads qgis.utils' own global, not a local variable
+    loaded = _qu.loadPlugin("hello_new")
+    started = loaded and _qu.startPlugin("hello_new")
+    check(loaded and started, "hello_new registered through qgis.utils (loadPlugin + startPlugin)")
+
+    panel._entries = [_pp.Entry("hello_new", created, "hello_new (test)", True)]
+    panel.reload_combo.clear()
+    panel.reload_combo.addItem(i18n_util.t("cp_plugin_placeholder"))
+    panel.reload_combo.addItem("hello_new (test)")
+    panel.reload_combo.setCurrentIndex(1)
+    panel._reload_plugin()
+    check(panel.reload_status.text() == i18n_util.t("cp_reload_ok", name="hello_new"),
+          f"reload reports success: {panel.reload_status.text()!r}")
+    check("hello_new" in _qu.active_plugins, "hello_new is still active after reload")
+
+    panel.reload_combo.setCurrentIndex(0)
+    panel._reload_plugin()
+    check(panel.reload_status.text() == i18n_util.t("cp_choose_plugin_first"),
+          "reload with nothing picked asks to choose a plugin first, doesn't crash")
+
+    _qu.unloadPlugin("hello_new")
     panel.mode_existing.setChecked(True)
 
     # --- PyCharm: the pip step must use QGIS's Python, never the QGIS program itself

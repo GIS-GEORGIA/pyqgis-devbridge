@@ -89,6 +89,21 @@ class ControlPanel(QDialog):
         top.addStretch(1)
         layout.addLayout(top)
 
+        # Always visible, regardless of tab: edit code in VS Code, reload it into this same
+        # running QGIS with one click - no restart, no losing the debug session or map state.
+        reload_row = QHBoxLayout()
+        reload_label = QLabel()
+        self._bind(reload_label.setText, "cp_reload_label")
+        self.reload_combo = QComboBox()
+        self.reload_combo.setMinimumWidth(220)
+        self.reload_btn = self._button("cp_reload_button", self._reload_plugin)
+        self.reload_status = QLabel()
+        reload_row.addWidget(reload_label)
+        reload_row.addWidget(self.reload_combo)
+        reload_row.addWidget(self.reload_btn)
+        reload_row.addWidget(self.reload_status, 1)
+        layout.addLayout(reload_row)
+
         self.tabs = QTabWidget()
         self.tabs.addTab(self._build_guide_tab(), "")
         self.tabs.addTab(self._build_vscode_tab(), "")
@@ -126,6 +141,7 @@ class ControlPanel(QDialog):
         for i, key in enumerate(("cp_tab_guide", "cp_tab_vscode", "cp_tab_pycharm", "cp_tab_project", "cp_tab_tool")):
             self.tabs.setTabText(i, t(key))
         self.plugin_combo.setItemText(0, t("cp_plugin_placeholder"))     # keep the user's pick, retitle entry 0
+        self.reload_combo.setItemText(0, t("cp_plugin_placeholder"))
         self._retitle_prepare()
         self._refresh_status()
 
@@ -385,13 +401,37 @@ class ControlPanel(QDialog):
 
     def _load_plugins(self) -> None:
         """Every plugin of every QGIS profile (the running one first). Entry 0 is a placeholder,
-        so nothing is chosen until the user picks."""
+        so nothing is chosen until the user picks. Feeds both the 'Prepare a plugin' dropdown and
+        the always-visible 'Reload plugin' one at the top."""
         self._entries = profile_plugins.list_all(self._profile_dir())
-        self.plugin_combo.clear()
-        self.plugin_combo.addItem(t("cp_plugin_placeholder"))
-        for entry in self._entries:
-            self.plugin_combo.addItem(entry.label)
-        self.plugin_combo.setCurrentIndex(0)
+        for combo in (self.plugin_combo, self.reload_combo):
+            combo.clear()
+            combo.addItem(t("cp_plugin_placeholder"))
+            for entry in self._entries:
+                combo.addItem(entry.label)
+            combo.setCurrentIndex(0)
+
+    def _reload_plugin(self) -> None:
+        """Re-imports the plugin's code and restarts it in this same QGIS process - the same
+        mechanism the separate 'Plugin Reloader' plugin uses, built in here so editing in VS
+        Code and seeing it live doesn't need a QGIS restart or another plugin installed."""
+        idx = self.reload_combo.currentIndex() - 1
+        if not 0 <= idx < len(self._entries):
+            self.reload_status.setText(t("cp_choose_plugin_first"))
+            return
+        name = self._entries[idx].name
+        try:
+            from qgis.utils import reloadPlugin
+            ok = reloadPlugin(name)
+        except Exception as exc:
+            self.reload_status.setText(t("cp_reload_error", name=name, error=str(exc)))
+            return
+        if ok:
+            self.reload_status.setText(t("cp_reload_ok", name=name))
+        else:
+            # reloadPlugin() itself already shows any import/initGui traceback via the message
+            # bar; a plain False just means QGIS didn't consider it "active" to begin with.
+            self.reload_status.setText(t("cp_reload_not_active", name=name))
 
     def _browse(self) -> None:
         chosen = QFileDialog.getExistingDirectory(self, t("cp_browse_title"), self.project_edit.text())

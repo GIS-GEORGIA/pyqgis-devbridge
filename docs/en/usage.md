@@ -2,8 +2,11 @@
 
 ## The Control Panel (recommended)
 
-Plugins → DevBridge → **Control Panel** (also a toolbar button). Five tabs, language switch
-(English / ქართული) at the top:
+Plugins → DevBridge → **Control Panel** (also a toolbar button). A **"Reload plugin"** picker sits at the
+top, visible regardless of which tab you're on: pick a plugin already enabled in this QGIS session and press
+*Reload in QGIS* to re-import its code and restart it — the same trick the separate "Plugin Reloader" plugin
+does, built in here so an edit-in-VS-Code / see-it-live loop needs no extra plugin and no QGIS restart. Five
+tabs below it, language switch (English / ქართული) at the very top:
 
 - **How to use** — the step-by-step instructions (first tab).
 - **VS Code** — host/port, *Start / Stop debug bridge*, status.
