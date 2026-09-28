@@ -220,3 +220,29 @@ def test_launch_qgis_warns_but_still_launches_when_port_busy(tmp_path: Path, mon
                               verbose_print=msgs.append, system="Linux")
     assert rc == 0
     assert any("5999" in m for m in msgs)
+
+
+def test_launch_qgis_warns_about_a_non_local_host(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr(launcher.shutil, "which", lambda n: "/usr/bin/qgis" if n == "qgis" else None)
+
+    def fake_popen(cmd, **kwargs):
+        Path(kwargs["env"]["DEVBRIDGE_READY_FILE"]).write_text("ok")
+        return FakeProcess()
+
+    msgs = []
+    launcher.launch_qgis(_qgis(tmp_path), host="0.0.0.0", port=5999, wait_ready=True, timeout=5,
+                         popen=fake_popen, work_dir=tmp_path / "w", verbose_print=msgs.append, system="Linux")
+    assert any("0.0.0.0" in m for m in msgs)
+
+
+def test_launch_qgis_does_not_warn_about_localhost(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr(launcher.shutil, "which", lambda n: "/usr/bin/qgis" if n == "qgis" else None)
+
+    def fake_popen(cmd, **kwargs):
+        Path(kwargs["env"]["DEVBRIDGE_READY_FILE"]).write_text("ok")
+        return FakeProcess()
+
+    msgs = []
+    launcher.launch_qgis(_qgis(tmp_path), host="localhost", port=5999, wait_ready=True, timeout=5,
+                         popen=fake_popen, work_dir=tmp_path / "w", verbose_print=msgs.append, system="Linux")
+    assert not any("not local" in m for m in msgs)

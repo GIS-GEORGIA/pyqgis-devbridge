@@ -81,6 +81,19 @@ for `.devbridge.json` and `.vscode/launch.json` too, and says so in the log - no
 one), so it just prints a warning and launches anyway - you may actually want to attach to the already-running
 session instead. Either way, `devbridge doctor` also reports a busy port directly.
 
+## Using a non-local host
+
+Setting `--host`/`gui_host` to anything other than `localhost` (a real IP, `0.0.0.0`, a hostname - typically to
+reach QGIS running in a VM or container) makes `setup`, `launch` and the plugin's own bridge print a warning:
+`debugpy`/`pydevd` accept whoever connects, with no password or token of their own. `devbridge doctor` also
+flags it when `.devbridge.json` has one. Only do this on a network you trust.
+
+## What gets ignored by git
+
+`devbridge setup` adds `.venv/` (your actual venv folder name), `__pycache__/` and `.pycharm-debug/` to
+`.gitignore` - but only where one is relevant: an existing `.gitignore`, or a `.git/` folder right there.
+A scaffolded plugin that was never `git init`-ed gets no extra file. Existing lines are never touched.
+
 ## Linking another plugin from a git checkout
 
 `devbridge setup --project-dir X` prepares a venv and IDE config wherever `X` is, but QGIS itself only loads

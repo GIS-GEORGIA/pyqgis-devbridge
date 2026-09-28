@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 ### Added
+- Non-local `--host` warning: `setup` and `launch` print a warning when the host isn't `localhost`/`127.0.0.1`/
+  `::1` (a real IP, `0.0.0.0`, a hostname), since `debugpy`/`pydevd` accept whoever connects with no
+  authentication of their own; `devbridge doctor` flags the same thing when `.devbridge.json` has one. New
+  `netutil.is_local_host`.
+- `devbridge setup` now adds `.venv/` (the real venv folder name), `__pycache__/` and `.pycharm-debug/` to
+  `.gitignore`, merged in like the `.vscode/` files (existing lines untouched) and only where a git checkout is
+  actually there (an existing `.gitignore`, or `.git/`) - a scaffolded plugin that was never `git init`-ed gets
+  no extra file. New `gitignore.ensure_ignored`.
 - Automated GitHub Release: pushing a `vX.Y.Z` tag builds and tests the wheel and `DevBridge.zip`, checks the
   tag matches `devbridge.__version__`, and publishes both as release assets
   ([`.github/workflows/release.yml`](.github/workflows/release.yml)) - replacing doing that by hand. Vendoring

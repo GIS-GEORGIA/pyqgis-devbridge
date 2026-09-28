@@ -144,6 +144,37 @@ def test_run_checks_reports_failure_and_hints(monkeypatch, tmp_path: Path):
     assert any(line.strip() and not line.startswith("[") for line in lines)   # a hint line was printed too
 
 
+def test_run_checks_flags_a_non_local_devbridge_json_host(monkeypatch, tmp_path: Path):
+    from devbridge import project_config
+
+    qgis = _qgis(tmp_path)
+    monkeypatch.setattr(doctor.pipeline, "find_all_qgis", lambda log=print: [qgis])
+    monkeypatch.setattr(doctor, "_python_can_import", lambda *a, **k: True)
+    monkeypatch.setattr(doctor, "_port_free", lambda host, port: True)
+    monkeypatch.setattr(doctor, "_plugin_enabled_anywhere", lambda: True)
+    project_config.write_project_config(tmp_path, host="0.0.0.0", port=5678,
+                                        plugin_name="p", venv_name=".venv")
+
+    checks = doctor.run_checks(project_dir=tmp_path)
+    flagged = [c for c in checks if c.label == doctor.t("doctor_host_local")]
+    assert len(flagged) == 1 and flagged[0].ok is None and "0.0.0.0" in flagged[0].hint
+
+
+def test_run_checks_does_not_flag_a_local_devbridge_json_host(monkeypatch, tmp_path: Path):
+    from devbridge import project_config
+
+    qgis = _qgis(tmp_path)
+    monkeypatch.setattr(doctor.pipeline, "find_all_qgis", lambda log=print: [qgis])
+    monkeypatch.setattr(doctor, "_python_can_import", lambda *a, **k: True)
+    monkeypatch.setattr(doctor, "_port_free", lambda host, port: True)
+    monkeypatch.setattr(doctor, "_plugin_enabled_anywhere", lambda: True)
+    project_config.write_project_config(tmp_path, host="localhost", port=5678,
+                                        plugin_name="p", venv_name=".venv")
+
+    checks = doctor.run_checks(project_dir=tmp_path)
+    assert not any(c.label == doctor.t("doctor_host_local") for c in checks)
+
+
 def test_run_checks_skips_project_checks_when_no_project_dir_given(monkeypatch, tmp_path: Path):
     qgis = _qgis(tmp_path)
     monkeypatch.setattr(doctor.pipeline, "find_all_qgis", lambda log=print: [qgis])

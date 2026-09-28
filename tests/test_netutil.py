@@ -36,3 +36,13 @@ def test_find_free_port_skips_busy_ports():
 def test_find_free_port_gives_up_after_tries(monkeypatch):
     monkeypatch.setattr(netutil, "port_free", lambda host, port: False)
     assert netutil.find_free_port("localhost", 12345, tries=3) is None
+
+
+def test_is_local_host_accepts_the_usual_spellings():
+    for host in ("localhost", "127.0.0.1", "::1", "", "LOCALHOST", " localhost "):
+        assert netutil.is_local_host(host) is True
+
+
+def test_is_local_host_rejects_remote_addresses():
+    for host in ("0.0.0.0", "192.168.1.5", "example.com", "my-vm.local"):
+        assert netutil.is_local_host(host) is False

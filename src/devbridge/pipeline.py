@@ -6,11 +6,11 @@ import platform
 from pathlib import Path
 from typing import Callable
 
-from . import debugpy_installer, env_builder, project_config, pycharm_config, vscode_config
+from . import debugpy_installer, env_builder, gitignore, project_config, pycharm_config, vscode_config
 from .detectors import get_detector
 from .detectors.base import QgisInstallation
 from .i18n_util import get_lang, t
-from .netutil import find_free_port, port_free
+from .netutil import find_free_port, is_local_host, port_free
 
 
 class SetupError(RuntimeError):
@@ -61,6 +61,11 @@ def find_qgis(log: Callable[[str], None] = print, qgis_root: str | Path | None =
     return chosen
 
 
+def _warn_if_remote_host(host: str, port: int, log: Callable[[str], None]) -> None:
+    if not is_local_host(host):
+        log(t("host_not_local_warning", host=host, port=port))
+
+
 def _resolve_port(host: str, port: int, log: Callable[[str], None]) -> int:
     """The requested port, unless something is already listening on it - a
     stale QGIS session from an earlier debug run is the common cause. Picks
@@ -88,6 +93,7 @@ def run_setup(project_dir: Path, port: int = vscode_config.DEFAULT_PORT,
     if plugin_name is None:
         plugin_name = vscode_config.infer_plugin_name(project_dir)
 
+    _warn_if_remote_host(host, port, log)
     port = _resolve_port(host, port, log)
     env_builder.build_venv(qgis, venv_path, verbose_print=log)
     debugpy_installer.install_debugpy(qgis, venv_python=venv_python(venv_path), verbose_print=log)
@@ -98,4 +104,7 @@ def run_setup(project_dir: Path, port: int = vscode_config.DEFAULT_PORT,
         project_dir, venv_path, port=port, verbose_print=log,
         host=host, plugin_name=plugin_name, lang=get_lang())
     pycharm_config.write_pycharm_notes(project_dir, verbose_print=log)
+    ignored = gitignore.ensure_ignored(project_dir, venv_name)
+    if ignored:
+        log(t("wrote_file", path=ignored))
     log(t("done"))

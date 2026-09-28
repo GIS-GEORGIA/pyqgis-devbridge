@@ -18,7 +18,7 @@ from typing import Callable
 from . import bridge_plugin, pipeline, project_config, vscode_config
 from .detectors.base import QgisInstallation
 from .i18n_util import t
-from .netutil import port_free as _port_free
+from .netutil import is_local_host, port_free as _port_free
 
 
 @dataclass
@@ -150,6 +150,11 @@ def run_checks(project_dir: Path | None = None, port: int | None = None,
         has_cfg = (project_dir / project_config.CONFIG_NAME).exists()
         checks.append(Check(t("doctor_devbridge_json"), has_cfg,
                             "" if has_cfg else t("doctor_no_devbridge_json_hint")))
+        if has_cfg:
+            cfg_host = project_config.read_project_config(project_dir)["host"]
+            if not is_local_host(cfg_host):
+                checks.append(Check(t("doctor_host_local"), None,
+                                    t("doctor_host_not_local_hint", host=cfg_host)))
 
         has_attach = _vscode_has_attach_config(project_dir)
         checks.append(Check(t("doctor_vscode_config"), has_attach,

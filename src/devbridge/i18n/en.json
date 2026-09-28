@@ -140,5 +140,8 @@
   "uninstall_not_installed": "{name} is not installed in any QGIS profile.",
   "uninstall_removed_path": "Removed: {path}",
   "uninstall_vscode_cleaned": "Removed DevBridge's own entries from {path}.",
-  "uninstall_project_done": "Project cleanup complete."
+  "uninstall_project_done": "Project cleanup complete.",
+  "host_not_local_warning": "Warning: host '{host}' is not local. The debug bridge has no authentication of its own - anyone who can reach {host}:{port} could attach and run arbitrary code in this QGIS session. Use 'localhost' unless you specifically need remote access (e.g. QGIS in a VM or container) and trust the network it's on.",
+  "doctor_host_local": "Debug bridge host is set to a non-local address",
+  "doctor_host_not_local_hint": "Host '{host}' is reachable from other machines and the bridge has no authentication - anyone who can reach it could run code in this QGIS session. Use 'localhost' unless you specifically need remote access and trust the network."
 }

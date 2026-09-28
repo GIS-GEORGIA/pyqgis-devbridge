@@ -33,3 +33,15 @@ def test_resolve_port_raises_when_nothing_free_nearby(monkeypatch):
     monkeypatch.setattr(pipeline, "find_free_port", lambda host, start, tries=20: None)
     with pytest.raises(pipeline.SetupError):
         pipeline._resolve_port("localhost", 5678, log=lambda _m: None)
+
+
+def test_warn_if_remote_host_is_silent_for_localhost():
+    msgs = []
+    pipeline._warn_if_remote_host("localhost", 5678, log=msgs.append)
+    assert msgs == []
+
+
+def test_warn_if_remote_host_warns_for_a_real_address():
+    msgs = []
+    pipeline._warn_if_remote_host("0.0.0.0", 5678, log=msgs.append)
+    assert len(msgs) == 1 and "0.0.0.0" in msgs[0] and "5678" in msgs[0]
