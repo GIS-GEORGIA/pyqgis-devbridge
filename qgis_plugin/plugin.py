@@ -100,6 +100,8 @@ class DevBridgePlugin:
                 msg = t("bridge_already_running", port=self.bridge.port)
             elif key == "other_debugger_loaded":
                 msg = t("debugger_conflict")
+            elif key == "python_not_found":
+                msg = t("pycharm_python_not_found")   # same message: "this QGIS's Python could not be found"
             else:
                 msg = t("debugpy_missing")
             self.iface.messageBar().pushMessage("DevBridge", msg, level=Qgis.MessageLevel.Warning)

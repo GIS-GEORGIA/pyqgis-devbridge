@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from qgis_plugin import pycharm_bridge as pb
+from qgis_plugin import pyexe
 
 INSTALLATION = pb.PyCharmInstallation(Path("/opt/pycharm"), "233.13135.95", "PY", "PyCharm 2023.3.2 (Professional)")
 
@@ -29,12 +30,12 @@ def test_find_python_skips_the_qgis_program_and_uses_the_prefix(monkeypatch, tmp
 
 def test_find_python_reports_when_nothing_matches(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(sys, "executable", str(tmp_path / "qgis"))
+    monkeypatch.setattr(sys, "_base_executable", str(tmp_path / "qgis"), raising=False)
     monkeypatch.setattr(sys, "exec_prefix", str(tmp_path / "nowhere"))
     monkeypatch.setattr(sys, "base_exec_prefix", str(tmp_path / "nowhere"))
-    monkeypatch.setattr(pb.shutil, "which", lambda _n: None)
-    with pytest.raises(pb.PyCharmBridgeError) as info:
+    monkeypatch.setattr(pyexe.shutil, "which", lambda _n: None)
+    with pytest.raises(pyexe.PythonNotFoundError):
         pb.find_python_executable()
-    assert str(info.value) == "python_not_found"
 
 
 class _FakePopen:
@@ -213,7 +214,58 @@ def test_debugpy_import_error_on_listen_becomes_a_conflict_error(monkeypatch):
         raise ImportError("cannot import name 'pydevd_defaults'")
 
     fake.listen = listen
+    fake.configure = lambda **kw: None
     monkeypatch.setitem(sys.modules, "debugpy", fake)
     with pytest.raises(debug_bridge.DebugBridgeError) as info:
         debug_bridge.DebugBridge().start()
     assert str(info.value) == "other_debugger_loaded"
+
+
+def test_debug_bridge_configures_debugpy_with_the_real_python(monkeypatch, tmp_path: Path):
+    """The bug that actually broke the shipped VS Code bridge: without
+    debugpy.configure(python=...), listen() spawns its adapter through
+    sys.executable, which inside QGIS is the QGIS program itself."""
+    _fake_pydevd(monkeypatch, None)
+    calls: list = []
+    fake = types.ModuleType("debugpy")
+    fake.configure = lambda **kw: calls.append(("configure", kw))
+    fake.listen = lambda addr: calls.append(("listen", addr))
+    monkeypatch.setitem(sys.modules, "debugpy", fake)
+    fake_python = str(tmp_path / "python.exe")
+    monkeypatch.setattr(debug_bridge, "find_python_executable", lambda: fake_python)
+
+    bridge = debug_bridge.DebugBridge("localhost", 5999)
+    bridge.start()
+    assert calls == [("configure", {"python": fake_python}), ("listen", ("localhost", 5999))]
+    assert bridge.is_running
+
+
+def test_debug_bridge_reports_when_no_python_is_found(monkeypatch):
+    _fake_pydevd(monkeypatch, None)
+    fake = types.ModuleType("debugpy")
+    fake.configure = lambda **kw: None
+    monkeypatch.setitem(sys.modules, "debugpy", fake)
+    monkeypatch.setattr(debug_bridge, "find_python_executable",
+                        lambda: (_ for _ in ()).throw(pyexe.PythonNotFoundError()))
+    with pytest.raises(debug_bridge.DebugBridgeError) as info:
+        debug_bridge.DebugBridge().start()
+    assert str(info.value) == "python_not_found"
+    assert not debug_bridge.DebugBridge().is_running
+
+
+def test_debug_bridge_survives_a_second_listen_after_reload(monkeypatch):
+    """Documented debugpy behaviour (one listener per process), not
+    reproduced with a real plugin reload in this session."""
+    _fake_pydevd(monkeypatch, None)
+    fake = types.ModuleType("debugpy")
+    fake.configure = lambda **kw: None
+
+    def listen(_addr):
+        raise RuntimeError("Listen has been called more than once")
+
+    fake.listen = listen
+    monkeypatch.setitem(sys.modules, "debugpy", fake)
+    bridge = debug_bridge.DebugBridge()
+    with pytest.raises(debug_bridge.DebugBridgeError) as info:
+        bridge.start()
+    assert str(info.value) == "already_running" and bridge.is_running

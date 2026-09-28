@@ -76,5 +76,17 @@
   "gui_new_name": "New plugin name:",
   "gui_new_parent": "Create in:",
   "gui_new_create": "Create and prepare",
-  "gui_choose_plugin_first": "Choose a plugin from the list first."
+  "gui_choose_plugin_first": "Choose a plugin from the list first.",
+  "wrote_file": "Wrote {path}",
+  "qgis_exe_not_found": "Could not find the QGIS executable for this installation.",
+  "launch_no_python_warning": "Warning: could not confirm the QGIS-bundled Python; debugpy's adapter may fail to start.",
+  "launching_qgis": "Starting QGIS ({exe})...",
+  "waiting_ready": "Waiting up to {timeout}s for the debug bridge to report ready on {host}:{port}...",
+  "ready_ok": "QGIS started with the debug bridge listening on {host}:{port}.",
+  "ready_timeout": "Timed out after {timeout}s waiting for QGIS to report the debug bridge ready.",
+  "ready_error": "QGIS reported a problem starting the debug bridge: {detail}",
+  "launch_failed": "Could not start QGIS: {detail}",
+  "vscode_file_unparsable": "{path} could not be parsed as JSON (comments or a syntax error?), so it was left untouched. The suggested content was written to {suggested} for you to merge by hand.",
+  "gui_launch_qgis": "Launch QGIS (debug)",
+  "gui_launch_failed": "Could not confirm the debug bridge started - see the log above."
 }

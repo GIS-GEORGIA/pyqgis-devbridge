@@ -7,6 +7,7 @@
     devbridge setup --project-dir .        # or work on any folder instead
     devbridge plugins         # list plugins found in your QGIS profile
     devbridge new my_plugin   # start a NEW plugin (starter files) and prepare it for debugging
+    devbridge launch          # start QGIS with the debug bridge already listening (for VS Code's F5)
     devbridge install-plugin  # put the DevBridge QGIS plugin into your profile and enable it
     devbridge detect          # just print what was found
     devbridge --lang ka setup
@@ -18,7 +19,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import bridge_plugin, config, pipeline, profiles, scaffold, vscode_config
+from . import bridge_plugin, config, launcher, pipeline, profiles, project_config, scaffold, vscode_config
 from .i18n_util import detect_system_lang, set_lang, t
 
 from .detectors import get_detector
@@ -138,11 +139,31 @@ def cmd_setup(args: argparse.Namespace) -> int:
         return 1
 
     try:
-        pipeline.run_setup(project_dir, port=args.port, venv_name=args.venv_name)
+        pipeline.run_setup(project_dir, port=args.port, venv_name=args.venv_name,
+                           host=args.host, plugin_name=args.plugin_name)
     except pipeline.SetupError as err:
         print(err)
         return 1
     return 0
+
+
+def cmd_launch(args: argparse.Namespace) -> int:
+    project_dir = Path(args.project_dir).resolve()
+    cfg = project_config.read_project_config(project_dir)
+    host = args.host or cfg["host"]
+    port = args.port or cfg["port"]
+
+    print(t("detecting_qgis"))
+    qgis = _detector.find_qgis()
+    if not qgis:
+        print(t("qgis_not_found"))
+        return 1
+    print(t("qgis_found", path=qgis.root))
+
+    return launcher.launch_qgis(
+        qgis, host=host, port=port, wait_for_client=args.wait_for_client,
+        wait_ready=args.wait_ready, timeout=args.timeout,
+        project_file=args.qgis_project, verbose_print=print)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -165,7 +186,23 @@ def build_parser() -> argparse.ArgumentParser:
     p_setup.add_argument("--venv-name", default=".venv", help="Venv folder name")
     p_setup.add_argument("--port", type=int, default=config.load()["port"],
                           help="debugpy attach port (default: from the shared DevBridge settings)")
+    p_setup.add_argument("--host", default="localhost", help="debugpy host")
+    p_setup.add_argument("--plugin-name", default=None,
+                          help="Folder name QGIS loads the plugin from, for VS Code path mappings "
+                               "(auto-detected when the target is inside a QGIS profile's plugins folder)")
     p_setup.set_defaults(func=cmd_setup)
+
+    p_launch = sub.add_parser("launch", help="Start QGIS with the debug bridge already listening")
+    p_launch.add_argument("--project-dir", default=".", help="Folder containing .devbridge.json")
+    p_launch.add_argument("--host", default=None, help="Override host from .devbridge.json")
+    p_launch.add_argument("--port", type=int, default=None, help="Override port from .devbridge.json")
+    p_launch.add_argument("--wait-ready", action="store_true",
+                          help="Wait until the bridge reports ready (or fails) before exiting")
+    p_launch.add_argument("--wait-for-client", action="store_true",
+                          help="Also block QGIS's startup until an IDE attaches")
+    p_launch.add_argument("--timeout", type=float, default=60.0, help="Seconds to wait with --wait-ready")
+    p_launch.add_argument("--qgis-project", default=None, help="Optional .qgz/.qgs to open")
+    p_launch.set_defaults(func=cmd_launch)
 
     p_plugins = sub.add_parser("plugins", help="List plugins found in your QGIS profile")
     p_plugins.add_argument("--profile", default=None, help="QGIS profile name")

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 ### Added
+- `devbridge launch` (`--wait-ready`, `--wait-for-client`, `--host`/`--port`, `--qgis-project`): starts QGIS with
+  the debug bridge already listening, via `qgis --code <bootstrap>` - so VS Code's F5 attaches to a QGIS that is
+  already running, without a manual "Start Debug Bridge" click in the QGIS menu first. Confirmed against a real
+  QGIS 3.44.5, both the standalone binary and OSGeo4W's `qgis-ltr.bat` wrapper. A "Launch QGIS (debug)" button in
+  the desktop tool does the same by hand.
+- `.devbridge.json`: a small, committable per-project file (host/port/plugin name/venv name) written by
+  `devbridge setup` and read by `devbridge launch`; `--host`/`--plugin-name` on `setup` (plugin name is
+  auto-detected when the target already lives in `<profile>/python/plugins/<name>`).
+- VS Code: a second launch configuration, "PyQGIS: Launch QGIS + attach", backed by a task that runs
+  `devbridge launch --wait-ready`; `pathMappings` for a plugin loaded from the QGIS profile so breakpoints in a
+  symlinked/copied-in workspace resolve correctly.
 - New plugin or existing one: the panel's "Prepare a plugin" tab (and the desktop tool) now start with a choice - **Improve an existing plugin**
   (a list over *every* QGIS profile, QGIS3 and QGIS4, nothing pre-selected), **Start a NEW plugin** (name + where; writes a working Qt5/Qt6
   starter plugin, then prepares it) or **Any folder**. CLI: `devbridge new my_plugin`, and the picker of `devbridge setup` offers "N. Start a NEW plugin"
@@ -38,6 +49,21 @@
   PyCharm Bridge" plugin menu action. Manual `.pycharm-debug/` steps
   remain as the documented fallback for setups it can't detect.
 ### Fixed
+- **Critical: the VS Code debug bridge (`qgis_plugin/debug_bridge.py`) never told debugpy which Python to use.**
+  Inside QGIS, `debugpy.listen()` spawns its adapter subprocess through `sys.executable`, which there is the QGIS
+  program itself; the adapter never started and `listen()` failed ~20-30s later with "timed out waiting for
+  adapter to connect" - confirmed against a real, running QGIS 3.44.5, every single time, meaning "Start Debug
+  Bridge (VS Code)" was non-functional as shipped in 0.2.1. `debugpy.configure(python=...)` is now called first,
+  using the same interpreter-finding logic as the PyCharm bridge (`qgis_plugin/pyexe.py`, now shared by both).
+  Also: a second `listen()` (plugin reload) is now treated as already-running instead of raising. Plugin 0.2.2.
+- `devbridge setup` used to overwrite `.vscode/settings.json` and `launch.json` outright, destroying anything the
+  user had added there. Both files (and the new `tasks.json`) are now merged: our entries are upserted by
+  name/label, everything else is kept. A file that isn't strict JSON (VS Code tolerates comments there) is left
+  untouched, with the content we would have written saved next to it as `*.devbridge-suggested.json`.
+- `devbridge launch`: a launch process that exits 0 almost immediately used to be reported as a failed launch.
+  Confirmed against a real OSGeo4W install: its `qgis*.bat` wrappers `start /B` the real `qgis*-bin.exe` as a
+  detached grandchild and return 0 right away, while QGIS keeps loading for another 20-40s in the background. Only
+  a non-zero exit is now treated as a real failure; zero keeps polling the ready file until the timeout.
 - The panel listed only the running QGIS profile and silently pre-selected its first plugin (e.g. `postgis_manager` in QGIS 4 hid the QGIS 3 plugins).
 - PyCharm bridge: `pip` was run with `sys.executable`, which inside QGIS is the QGIS program itself. It now finds
   the matching Python from the interpreter prefix, installs pydevd-pycharm with `--target` into

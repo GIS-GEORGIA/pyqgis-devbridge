@@ -76,5 +76,17 @@
   "gui_new_name": "ახალი დანამატის სახელი:",
   "gui_new_parent": "შექმნა აქ:",
   "gui_new_create": "შექმნა და მომზადება",
-  "gui_choose_plugin_first": "ჯერ სიიდან აირჩიეთ დანამატი."
+  "gui_choose_plugin_first": "ჯერ სიიდან აირჩიეთ დანამატი.",
+  "wrote_file": "ჩაიწერა {path}",
+  "qgis_exe_not_found": "ამ QGIS ინსტალაციისთვის გამშვები ფაილი ვერ მოიძებნა.",
+  "launch_no_python_warning": "გაფრთხილება: QGIS-ის ჩაშენებული Python ვერ დადასტურდა; debugpy-ს adapter-ის გაშვება შეიძლება ჩავარდეს.",
+  "launching_qgis": "QGIS-ის გაშვება ({exe})...",
+  "waiting_ready": "დაველოდები დებაგ ხიდის მზადყოფნას {host}:{port}-ზე, მაქსიმუმ {timeout}წმ...",
+  "ready_ok": "QGIS გაეშვა და დებაგ ხიდი უსმენს {host}:{port}-ზე.",
+  "ready_timeout": "{timeout}წმ გავიდა და QGIS-მა დებაგ ხიდის მზადყოფნა ვერ დაადასტურა.",
+  "ready_error": "QGIS-მა დებაგ ხიდის გაშვებისას პრობლემა დააფიქსირა: {detail}",
+  "launch_failed": "QGIS ვერ გაეშვა: {detail}",
+  "vscode_file_unparsable": "{path} JSON-ად ვერ დამუშავდა (კომენტარი ან სინტაქსური შეცდომა?), ამიტომ ხელუხლებელი დარჩა. შემოთავაზებული შიგთავსი ჩაიწერა {suggested}-ში, ხელით შესარწყმელად.",
+  "gui_launch_qgis": "QGIS-ის გაშვება (დებაგით)",
+  "gui_launch_failed": "დებაგ ხიდის გაშვება ვერ დადასტურდა - იხილეთ ლოგი ზემოთ."
 }

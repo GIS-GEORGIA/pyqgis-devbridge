@@ -10,6 +10,9 @@ Bilingual (English / ქართული).
 plugins and prepare it for debugging, all with buttons and in English or Georgian. The panel also
 launches (or opens the folder of) a standalone desktop tool that does the same without QGIS running.
 
+`devbridge setup` also writes a VS Code launch configuration that starts QGIS itself with the bridge already
+listening (`devbridge launch`), so F5 attaches without a manual click in the QGIS menu first.
+
 Two halves, one protocol:
 
 | Piece | What it is | Where |

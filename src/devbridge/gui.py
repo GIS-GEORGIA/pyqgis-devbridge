@@ -14,7 +14,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox, scrolledtext, ttk
 
-from . import bridge_plugin, config, desktop, pipeline, profiles, scaffold
+from . import bridge_plugin, config, desktop, launcher, pipeline, profiles, project_config, scaffold
 from .i18n_util import detect_system_lang, get_lang, set_lang, t
 
 _POLL_MS = 100
@@ -115,7 +115,8 @@ class DevBridgeApp(ttk.Frame):
         self.run_btn.pack(side="left", padx=(0, 6))
         self.open_btns = ttk.Frame(self.btn_row)
         self._text(ttk.Button(self.open_btns, command=self._open_folder), "gui_open_folder").pack(side="left", padx=(0, 6))
-        self._text(ttk.Button(self.open_btns, command=self._open_vscode), "gui_open_vscode").pack(side="left")
+        self._text(ttk.Button(self.open_btns, command=self._open_vscode), "gui_open_vscode").pack(side="left", padx=(0, 6))
+        self._text(ttk.Button(self.open_btns, command=self._launch_qgis), "gui_launch_qgis").pack(side="left")
         self.open_btns.pack(side="left")
         self._proj_frame = proj
         self._show_mode()
@@ -259,6 +260,26 @@ class DevBridgeApp(ttk.Frame):
         path = self._project_path()
         if path and not desktop.open_in_vscode(path):
             messagebox.showinfo("DevBridge", t("gui_vscode_missing"))
+
+    def _launch_qgis(self) -> None:
+        """Starts QGIS with the debug bridge already listening - the same
+        thing VS Code's F5 ("PyQGIS: Launch QGIS + attach") does, useful to
+        try once by hand before wiring it into an IDE."""
+        path = self._project_path()
+        if path is None:
+            return
+        threading.Thread(target=self._launch_qgis_worker, args=(path,), daemon=True).start()
+
+    def _launch_qgis_worker(self, path: Path) -> None:
+        try:
+            qgis = pipeline.find_qgis(self._log)
+            cfg = project_config.read_project_config(path)
+            code = launcher.launch_qgis(qgis, host=cfg["host"], port=cfg["port"],
+                                        wait_ready=True, verbose_print=self._log)
+            if code != 0:
+                self._log(t("gui_launch_failed"))
+        except pipeline.SetupError as exc:
+            self._log(str(exc))
 
     # --- background work ------------------------------------------------------
     def _log(self, msg: str) -> None:

@@ -17,6 +17,15 @@ Plugins → DevBridge → **Control Panel** (also a toolbar button). Five tabs, 
 
 Only one debugger per QGIS session: VS Code (debugpy) or PyCharm (pydevd) — to switch, restart QGIS.
 
+## Starting QGIS with the bridge already listening
+
+`devbridge setup` also writes `.devbridge.json` (host/port/plugin name) and a second VS Code launch
+configuration, **"PyQGIS: Launch QGIS + attach"**. Pressing F5 with it selected runs
+`devbridge launch --wait-ready`, which starts QGIS via `qgis --code`, waits for the bridge to report ready, and
+only then lets VS Code attach — no manual "Start Debug Bridge" click needed first. From a terminal:
+`devbridge launch --wait-ready`; the desktop tool has the same as a **"Launch QGIS (debug)"** button. Confirmed
+against a real QGIS 3.44.5 (standalone install and OSGeo4W).
+
 Settings (language, ports) are stored in one file shared by the panel, the desktop tool and the
 `devbridge` command. Its location is shown on the *Desktop tool* tab.
 
