@@ -1,0 +1,13 @@
+{
+  "displayName": "PyQGIS DevBridge",
+  "description": "PyQGIS-ის დებაგინგი ერთი ღილაკით: QGIS-ის გაშვება დებაგ ხიდით და VS Code-ის დაკავშირება. pyqgis-devbridge CLI-ის თანმხლები.",
+  "command.launchAndAttach": "QGIS-ის გაშვება დებაგერით და დაკავშირება",
+  "command.attach": "გაშვებულ QGIS-თან დაკავშირება",
+  "command.setup": "PyQGIS გარემოს მომზადება ამ საქაღალდისთვის",
+  "command.detect": "QGIS ინსტალაციის მოძიება",
+  "command.menu": "DevBridge მოქმედებების ჩვენება",
+  "config.cliCommand": "devbridge ბრძანების ხაზის ინსტრუმენტი (სახელი PATH-ში ან აბსოლუტური გზა).",
+  "config.language": "DevBridge შეტყობინებებისა და CLI-ის ენა. 'auto' მიჰყვება VS Code-ის ინტერფეისის ენას.",
+  "config.launchTimeoutSeconds": "რამდენ ხანს დაელოდოს QGIS-ის მიერ დებაგ ხიდის გაშვებას.",
+  "config.showStatusBar": "DevBridge ღილაკის ჩვენება status bar-ზე."
+}

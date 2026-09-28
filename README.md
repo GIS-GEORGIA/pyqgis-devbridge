@@ -11,7 +11,9 @@ plugins and prepare it for debugging, all with buttons and in English or Georgia
 launches (or opens the folder of) a standalone desktop tool that does the same without QGIS running.
 
 `devbridge setup` also writes a VS Code launch configuration that starts QGIS itself with the bridge already
-listening (`devbridge launch`), so F5 attaches without a manual click in the QGIS menu first.
+listening (`devbridge launch`), so F5 attaches without a manual click in the QGIS menu first. A thin
+[VS Code extension](extensions/vscode/) turns that into actual buttons/commands, for people who would rather
+not remember CLI flags.
 
 Two halves, one protocol:
 

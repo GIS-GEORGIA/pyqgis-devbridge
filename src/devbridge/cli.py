@@ -19,7 +19,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import bridge_plugin, config, launcher, pipeline, profiles, project_config, scaffold, vscode_config
+from . import __version__, bridge_plugin, config, launcher, pipeline, profiles, project_config, scaffold, vscode_config
 from .i18n_util import detect_system_lang, set_lang, t
 
 from .detectors import get_detector
@@ -168,6 +168,7 @@ def cmd_launch(args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="devbridge", description=t("welcome"))
+    parser.add_argument("--version", action="version", version=f"devbridge {__version__}")
     parser.add_argument("--lang", choices=["en", "ka"], default=None,
                          help="Interface language / ინტერფეისის ენა")
 

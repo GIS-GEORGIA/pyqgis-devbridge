@@ -17,6 +17,23 @@ Plugins → DevBridge → **Control Panel** (also a toolbar button). Five tabs, 
 
 Only one debugger per QGIS session: VS Code (debugpy) or PyCharm (pydevd) — to switch, restart QGIS.
 
+## VS Code extension (optional)
+
+A thin extension (`extensions/vscode/`, no debugging logic of its own — it calls this same CLI and starts VS
+Code's own `debugpy` attach) adds the commands **DevBridge: Launch QGIS with debugger and attach**, **... Attach
+to running QGIS**, **... Set up PyQGIS environment for this folder** and **... Detect QGIS installation**, plus a
+status bar button. Not on the Marketplace yet — build it yourself:
+
+```bash
+cd extensions/vscode
+npm install && npm test
+npm run package                                    # -> devbridge-vscode-<version>.vsix
+code --install-extension devbridge-vscode-*.vsix
+```
+
+Compiling, its own unit tests (string tables, config parsing, CLI-argument building) and packaging are all
+green; the actual VS Code attach flow has not been exercised in a real VS Code window in this repo's history yet.
+
 ## Starting QGIS with the bridge already listening
 
 `devbridge setup` also writes `.devbridge.json` (host/port/plugin name) and a second VS Code launch

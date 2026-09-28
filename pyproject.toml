@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyqgis-devbridge"
-version = "0.1.0"
+version = "0.3.0"
 description = "Automated PyQGIS development environment setup + live debug bridge for VS Code / PyCharm (bilingual EN/KA)."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [
-    { name = "Giorgi Kapanadze (Kapo)", email = "noreply@example.com" }
+    { name = "Giorgi Kapanadze (Kapo)", email = "kapan.gio777@gmail.com" }
 ]
 keywords = ["qgis", "pyqgis", "gis", "debugging", "vscode", "pycharm", "devtools"]
 classifiers = [
@@ -39,3 +39,9 @@ Repository = "https://github.com/GIS-GEORGIA/pyqgis-devbridge"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+# Without this, a real (non-editable) wheel silently drops the i18n JSON files -
+# `pip install -e .` (used throughout this repo's own testing) never notices,
+# because an editable install just points back at the source tree.
+devbridge = ["i18n/*.json"]

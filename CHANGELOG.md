@@ -49,6 +49,10 @@
   PyCharm Bridge" plugin menu action. Manual `.pycharm-debug/` steps
   remain as the documented fallback for setups it can't detect.
 ### Fixed
+- A real (non-editable) wheel silently dropped the `i18n/*.json` files - `pip install -e .`, used throughout this
+  repo's own testing, never caught it, because an editable install just points back at the source tree. Confirmed
+  by building an actual wheel and installing it into a clean venv, both before (missing files, `FileNotFoundError`
+  on any non-English string) and after adding `[tool.setuptools.package-data]`.
 - **Critical: the VS Code debug bridge (`qgis_plugin/debug_bridge.py`) never told debugpy which Python to use.**
   Inside QGIS, `debugpy.listen()` spawns its adapter subprocess through `sys.executable`, which there is the QGIS
   program itself; the adapter never started and `listen()` failed ~20-30s later with "timed out waiting for

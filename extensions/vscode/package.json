@@ -1,0 +1,112 @@
+{
+  "name": "devbridge-vscode",
+  "displayName": "%displayName%",
+  "description": "%description%",
+  "version": "0.1.0",
+  "publisher": "gis-georgia",
+  "icon": "icon.png",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GIS-GEORGIA/pyqgis-devbridge.git",
+    "directory": "extensions/vscode"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Debuggers",
+    "Other"
+  ],
+  "keywords": [
+    "qgis",
+    "pyqgis",
+    "gis",
+    "debug",
+    "debugpy"
+  ],
+  "extensionDependencies": [
+    "ms-python.debugpy"
+  ],
+  "main": "./out/src/extension.js",
+  "activationEvents": [
+    "workspaceContains:.devbridge.json"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "devbridge.launchAndAttach",
+        "title": "%command.launchAndAttach%",
+        "category": "DevBridge"
+      },
+      {
+        "command": "devbridge.attach",
+        "title": "%command.attach%",
+        "category": "DevBridge"
+      },
+      {
+        "command": "devbridge.setup",
+        "title": "%command.setup%",
+        "category": "DevBridge"
+      },
+      {
+        "command": "devbridge.detect",
+        "title": "%command.detect%",
+        "category": "DevBridge"
+      },
+      {
+        "command": "devbridge.menu",
+        "title": "%command.menu%",
+        "category": "DevBridge"
+      }
+    ],
+    "taskDefinitions": [
+      {
+        "type": "devbridge"
+      }
+    ],
+    "configuration": {
+      "title": "DevBridge",
+      "properties": {
+        "devbridge.cliCommand": {
+          "type": "string",
+          "default": "devbridge",
+          "description": "%config.cliCommand%"
+        },
+        "devbridge.language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "en",
+            "ka"
+          ],
+          "default": "auto",
+          "description": "%config.language%"
+        },
+        "devbridge.launchTimeoutSeconds": {
+          "type": "number",
+          "default": 60,
+          "minimum": 5,
+          "description": "%config.launchTimeoutSeconds%"
+        },
+        "devbridge.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.showStatusBar%"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p .",
+    "test": "tsc -p tsconfig.test.json && node --test out-test/test/core.test.js",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "1.85.0",
+    "@vscode/vsce": "^3.0.0",
+    "typescript": "^5.4.0"
+  }
+}

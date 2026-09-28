@@ -1,0 +1,13 @@
+{
+  "displayName": "PyQGIS DevBridge",
+  "description": "One-click PyQGIS debugging: start QGIS with the debug bridge and attach VS Code. Companion to the pyqgis-devbridge CLI.",
+  "command.launchAndAttach": "Launch QGIS with debugger and attach",
+  "command.attach": "Attach to running QGIS",
+  "command.setup": "Set up PyQGIS environment for this folder",
+  "command.detect": "Detect QGIS installation",
+  "command.menu": "Show DevBridge actions",
+  "config.cliCommand": "The devbridge command-line tool (name on PATH, or an absolute path).",
+  "config.language": "Language for DevBridge messages and the CLI. 'auto' follows the VS Code display language.",
+  "config.launchTimeoutSeconds": "How long to wait for QGIS to start the debug bridge.",
+  "config.showStatusBar": "Show the DevBridge status bar button."
+}

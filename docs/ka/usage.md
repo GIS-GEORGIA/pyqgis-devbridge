@@ -19,6 +19,23 @@ Plugins → DevBridge → **მართვის პანელი** (ას�
 
 ერთ QGIS სესიაში მხოლოდ ერთი დებაგერია შესაძლებელი: VS Code (debugpy) ან PyCharm (pydevd) — გადასართავად გადატვირთეთ QGIS.
 
+## VS Code extension (სურვილისამებრ)
+
+თხელი extension (`extensions/vscode/`, საკუთარი დებაგინგ-ლოგიკის გარეშე — იძახებს ამავე CLI-ს და უშვებს VS
+Code-ის ჩვეულებრივ `debugpy` attach-ს) ამატებს ბრძანებებს **DevBridge: Launch QGIS with debugger and attach**,
+**... Attach to running QGIS**, **... Set up PyQGIS environment for this folder** და **... Detect QGIS
+installation**, პლუს status bar-ის ღილაკს. Marketplace-ზე ჯერ არ არის — თავად აწყვეთ:
+
+```bash
+cd extensions/vscode
+npm install && npm test
+npm run package                                    # -> devbridge-vscode-<ვერსია>.vsix
+code --install-extension devbridge-vscode-*.vsix
+```
+
+Compile, საკუთარი unit ტესტები (სტრიქონების ცხრილები, კონფიგურაციის წაკითხვა, CLI-არგუმენტების აწყობა) და
+packaging მწვანეა; რეალურ VS Code ფანჯარაში attach-ის ნაკადი ამ repo-ს ისტორიაში ჯერ არ გამოცდილა.
+
 ## QGIS-ის გაშვება უკვე მოქმედი ხიდით
 
 `devbridge setup` ასევე წერს `.devbridge.json`-ს (ჰოსტი/პორტი/დანამატის სახელი) და მეორე VS Code launch
