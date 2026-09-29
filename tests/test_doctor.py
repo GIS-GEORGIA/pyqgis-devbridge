@@ -185,6 +185,82 @@ def test_run_checks_skips_project_checks_when_no_project_dir_given(monkeypatch, 
     assert not any("venv" in l or ".devbridge.json" in l or "launch.json" in l for l in labels)
 
 
+# --- apply_fixes: only touches what's in FIXABLE_KEYS, never the unfixable checks --------------
+
+def test_apply_fixes_does_nothing_when_nothing_is_fixable(monkeypatch):
+    monkeypatch.setattr(doctor.bridge_plugin, "install_into_profiles", lambda **kw: pytest.fail("must not run"))
+    checks = [doctor.Check("QGIS installation found", False, key="qgis_found"),
+             doctor.Check("Port free", False, key="port_free")]
+    assert doctor.apply_fixes(checks, log=lambda _m: None) is False
+
+
+def test_apply_fixes_installs_the_plugin_when_not_installed_or_not_enabled(monkeypatch):
+    calls = []
+    monkeypatch.setattr(doctor.bridge_plugin, "install_into_profiles", lambda log=print: calls.append("plugin") or 0)
+    checks = [doctor.Check("Plugin installed", False, key="plugin_installed")]
+    assert doctor.apply_fixes(checks, log=lambda _m: None) is True
+    assert calls == ["plugin"]
+
+    calls.clear()
+    checks = [doctor.Check("Plugin enabled", False, key="plugin_enabled")]
+    assert doctor.apply_fixes(checks, log=lambda _m: None) is True
+    assert calls == ["plugin"]
+
+
+def test_apply_fixes_reruns_setup_for_project_related_failures(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.setattr(doctor.pipeline, "run_setup",
+                        lambda path, port=5678, qgis=None, log=print: calls.append((path, port)))
+    checks = [doctor.Check("venv import", False, key="venv_import"),
+             doctor.Check(".devbridge.json exists", False, key="devbridge_json")]
+    assert doctor.apply_fixes(checks, project_dir=tmp_path, port=9999, log=lambda _m: None) is True
+    assert calls == [(tmp_path.resolve(), 9999)]
+
+
+def test_apply_fixes_skips_project_fix_without_a_project_dir(monkeypatch):
+    monkeypatch.setattr(doctor.pipeline, "run_setup", lambda *a, **k: pytest.fail("must not run"))
+    checks = [doctor.Check("venv import", False, key="venv_import")]
+    assert doctor.apply_fixes(checks, project_dir=None, log=lambda _m: None) is True
+
+
+def test_apply_fixes_installs_debugpy_into_qgis_when_no_project_dir(tmp_path, monkeypatch):
+    qgis = _qgis(tmp_path)
+    calls = []
+    monkeypatch.setattr(doctor.debugpy_installer, "install_debugpy",
+                        lambda q, verbose_print=print: calls.append(q))
+    checks = [doctor.Check("debugpy in QGIS", False, key="debugpy_qgis")]
+    assert doctor.apply_fixes(checks, qgis=qgis, log=lambda _m: None) is True
+    assert calls == [qgis]
+
+
+def test_apply_fixes_finds_qgis_itself_when_none_given(tmp_path, monkeypatch):
+    qgis = _qgis(tmp_path)
+    monkeypatch.setattr(doctor.pipeline, "find_qgis", lambda log=print: qgis)
+    calls = []
+    monkeypatch.setattr(doctor.debugpy_installer, "install_debugpy",
+                        lambda q, verbose_print=print: calls.append(q))
+    checks = [doctor.Check("debugpy in QGIS", False, key="debugpy_qgis")]
+    assert doctor.apply_fixes(checks, qgis=None, log=lambda _m: None) is True
+    assert calls == [qgis]
+
+
+def test_apply_fixes_project_fix_takes_priority_over_bare_debugpy_qgis_fix(tmp_path, monkeypatch):
+    """When a project_dir is given, run_setup already reinstalls debugpy into
+    QGIS too - no need for a separate, narrower fix on top of it."""
+    monkeypatch.setattr(doctor.debugpy_installer, "install_debugpy",
+                        lambda *a, **k: pytest.fail("must not run separately"))
+    monkeypatch.setattr(doctor.pipeline, "run_setup", lambda path, port=5678, qgis=None, log=print: None)
+    checks = [doctor.Check("debugpy in QGIS", False, key="debugpy_qgis"),
+             doctor.Check("venv import", False, key="venv_import")]
+    assert doctor.apply_fixes(checks, project_dir=tmp_path, log=lambda _m: None) is True
+
+
+def test_apply_fixes_ignores_failures_it_has_no_fix_for(monkeypatch):
+    monkeypatch.setattr(doctor.bridge_plugin, "install_into_profiles", lambda **kw: pytest.fail("must not run"))
+    checks = [doctor.Check("QGIS's Python can import qgis.core", False, key="qgis_import")]
+    assert doctor.apply_fixes(checks, log=lambda _m: None) is False
+
+
 # --- CLI wiring ------------------------------------------------------------------------
 
 def test_cmd_doctor_reports_ok(monkeypatch, tmp_path: Path, capsys):
@@ -197,7 +273,7 @@ def test_cmd_doctor_reports_ok(monkeypatch, tmp_path: Path, capsys):
     monkeypatch.setattr(doctor, "_port_free", lambda host, port: True)
     monkeypatch.setattr(doctor, "_plugin_enabled_anywhere", lambda: True)
 
-    args = argparse.Namespace(project_dir=None, port=5678, qgis_root=None)
+    args = argparse.Namespace(project_dir=None, port=5678, qgis_root=None, fix=False)
     assert cli.cmd_doctor(args) == 0
     assert "checked out" in capsys.readouterr().out
 
@@ -207,5 +283,35 @@ def test_cmd_doctor_with_bad_qgis_root_fails_cleanly(monkeypatch, tmp_path: Path
     import argparse
 
     monkeypatch.setattr(cli.pipeline, "find_all_qgis", lambda log=print: [])
-    args = argparse.Namespace(project_dir=None, port=5678, qgis_root=str(tmp_path / "nope"))
+    args = argparse.Namespace(project_dir=None, port=5678, qgis_root=str(tmp_path / "nope"), fix=False)
     assert cli.cmd_doctor(args) == 1
+
+
+def test_cmd_doctor_fix_skips_apply_fixes_when_already_ok(monkeypatch, tmp_path: Path):
+    from devbridge import cli
+    import argparse
+
+    qgis = _qgis(tmp_path)
+    monkeypatch.setattr(cli.pipeline, "find_all_qgis", lambda log=print: [qgis])
+    monkeypatch.setattr(doctor, "_python_can_import", lambda *a, **k: True)
+    monkeypatch.setattr(doctor, "_port_free", lambda host, port: True)
+    monkeypatch.setattr(doctor, "_plugin_enabled_anywhere", lambda: True)
+    monkeypatch.setattr(doctor, "apply_fixes", lambda *a, **k: pytest.fail("must not run when already ok"))
+
+    args = argparse.Namespace(project_dir=None, port=5678, qgis_root=None, fix=True)
+    assert cli.cmd_doctor(args) == 0
+
+
+def test_cmd_doctor_fix_applies_fixes_and_rechecks(monkeypatch, tmp_path: Path, capsys):
+    from devbridge import cli
+    import argparse
+
+    monkeypatch.setattr(cli.pipeline, "find_all_qgis", lambda log=print: [])
+    calls = []
+    monkeypatch.setattr(doctor, "apply_fixes", lambda checks, **kw: calls.append("fixed") or True)
+
+    args = argparse.Namespace(project_dir=None, port=5678, qgis_root=None, fix=True)
+    assert cli.cmd_doctor(args) == 1     # still fails: QGIS genuinely isn't there, nothing could fix that
+    assert calls == ["fixed"]
+    out = capsys.readouterr().out
+    assert out.count("QGIS installation found") == 2      # checked, fixed, re-checked and reported again

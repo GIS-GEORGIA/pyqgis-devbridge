@@ -68,9 +68,17 @@ with `--project-dir`), the DevBridge plugin installed and enabled, the configure
 ```bash
 devbridge doctor                              # QGIS/debugpy/plugin/port only
 devbridge doctor --project-dir /path/to/plugin  # + that project's .venv/.devbridge.json/.vscode
+devbridge doctor --project-dir /path/to/plugin --fix  # ...and try to fix what failed, then re-check
 ```
 
-The desktop tool has the same as a **"Run diagnostics"** button, next to *Launch QGIS (debug)*.
+`--fix` only touches what a failure is actually safe to redo automatically: installs/enables the DevBridge
+plugin, installs `debugpy` into QGIS's Python, or (with `--project-dir`) just reruns `devbridge setup` for
+that project - the same thing typing that command yourself would do. It never touches a QGIS install that
+can't be found, a `qgis.core` import that's failing, a busy port, or a deliberately non-local `--host` -
+those need a person to look at them.
+
+The desktop tool has the same as **"Run diagnostics"** / **"Fix what's safe"** buttons, next to *Launch QGIS
+(debug)*.
 
 ## Port conflicts
 

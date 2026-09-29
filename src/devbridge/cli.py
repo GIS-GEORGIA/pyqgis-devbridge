@@ -14,6 +14,7 @@
     devbridge uninstall       # remove DevBridge from your profile(s) (--project-dir to also clean a project)
     devbridge detect          # just print what was found
     devbridge doctor          # check the whole chain (QGIS, debugpy, plugin, port, .vscode/)
+    devbridge doctor --fix    # ...and try to fix what's safe to fix automatically
     devbridge --lang ka setup
     devbridge gui             # launch the Tk GUI instead
 """
@@ -229,6 +230,14 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             print(err)
             return 1
     checks = doctor.run_checks(project_dir=project_dir, port=args.port, qgis=qgis, log=print)
+    ok = doctor.print_report(checks, log=print)
+    if ok or not args.fix:
+        return 0 if ok else 1
+
+    print(t("doctor_fix_header"))
+    doctor.apply_fixes(checks, project_dir=project_dir, port=args.port, qgis=qgis, log=print)
+    print(t("doctor_fix_rechecking"))
+    checks = doctor.run_checks(project_dir=project_dir, port=args.port, qgis=qgis, log=print)
     return 0 if doctor.print_report(checks, log=print) else 1
 
 
@@ -378,6 +387,9 @@ def build_parser() -> argparse.ArgumentParser:
                           help="Port to check (default: from the shared DevBridge settings)")
     p_doctor.add_argument("--qgis-root", default=None,
                           help="Check this specific QGIS install (see 'devbridge detect')")
+    p_doctor.add_argument("--fix", action="store_true",
+                          help="Try to fix what's safe to fix automatically (installs debugpy/the plugin, "
+                               "reruns setup for --project-dir), then re-check")
     p_doctor.set_defaults(func=cmd_doctor)
 
     p_gui = sub.add_parser("gui", help="Launch the graphical interface")

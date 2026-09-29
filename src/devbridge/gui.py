@@ -128,6 +128,8 @@ class DevBridgeApp(ttk.Frame):
         self._text(ttk.Button(self.open_btns, command=self._open_vscode), "gui_open_vscode").pack(side="left", padx=(0, 6))
         self._text(ttk.Button(self.open_btns, command=self._launch_qgis), "gui_launch_qgis").pack(side="left", padx=(0, 6))
         self._text(ttk.Button(self.open_btns, command=self._run_doctor), "gui_doctor").pack(side="left")
+        self._text(ttk.Button(self.open_btns, command=self._run_doctor_fix), "gui_doctor_fix").pack(
+            side="left", padx=(6, 0))
         self.open_btns.pack(side="left")
         self._proj_frame = proj
         self._show_mode()
@@ -314,9 +316,23 @@ class DevBridgeApp(ttk.Frame):
         cfg = self._settings_from_form()
         port = cfg["port"] if cfg else None
         qgis = self._selected_qgis()      # read the Tk widget here, on the main thread, not in the worker
-        threading.Thread(target=self._doctor_worker, args=(path, port, qgis), daemon=True).start()
+        threading.Thread(target=self._doctor_worker, args=(path, port, qgis, False), daemon=True).start()
 
-    def _doctor_worker(self, path: str | None, port: int | None, qgis) -> None:
+    def _run_doctor_fix(self) -> None:
+        path = self.project_dir.get().strip() or None
+        cfg = self._settings_from_form()
+        port = cfg["port"] if cfg else None
+        qgis = self._selected_qgis()
+        threading.Thread(target=self._doctor_worker, args=(path, port, qgis, True), daemon=True).start()
+
+    def _doctor_worker(self, path: str | None, port: int | None, qgis, fix: bool) -> None:
+        checks = doctor.run_checks(project_dir=path, port=port, qgis=qgis, log=self._log)
+        ok = doctor.print_report(checks, log=self._log)
+        if ok or not fix:
+            return
+        self._log(t("doctor_fix_header"))
+        doctor.apply_fixes(checks, project_dir=path, port=port, qgis=qgis, log=self._log)
+        self._log(t("doctor_fix_rechecking"))
         checks = doctor.run_checks(project_dir=path, port=port, qgis=qgis, log=self._log)
         doctor.print_report(checks, log=self._log)
 

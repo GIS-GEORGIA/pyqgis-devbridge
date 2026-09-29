@@ -15,10 +15,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from . import bridge_plugin, pipeline, project_config, vscode_config
+from . import bridge_plugin, debugpy_installer, pipeline, project_config, vscode_config
 from .detectors.base import QgisInstallation
 from .i18n_util import t
 from .netutil import is_local_host, port_free as _port_free
+
+# Checks apply_fixes() knows how to act on - stable identifiers, not the
+# translated label, since the label changes with the interface language.
+FIXABLE_KEYS = frozenset({"debugpy_qgis", "plugin_installed", "plugin_enabled",
+                          "venv_import", "debugpy_venv", "devbridge_json", "vscode_config"})
 
 
 @dataclass
@@ -26,6 +31,7 @@ class Check:
     label: str
     ok: bool | None          # True/False, or None = skipped (not applicable here)
     hint: str = field(default="")
+    key: str = field(default="")     # stable id for apply_fixes(); "" for checks nothing can fix
 
 
 def _no_window_flags() -> int:
@@ -109,31 +115,35 @@ def run_checks(project_dir: Path | None = None, port: int | None = None,
 
     installs = pipeline.find_all_qgis(log=log)
     if not installs:
-        checks.append(Check(t("doctor_qgis_found"), False, t("doctor_qgis_found_hint")))
+        checks.append(Check(t("doctor_qgis_found"), False, t("doctor_qgis_found_hint"), key="qgis_found"))
     else:
         qgis = qgis or installs[0]
-        checks.append(Check(t("doctor_qgis_found"), True, str(qgis.root)))
+        checks.append(Check(t("doctor_qgis_found"), True, str(qgis.root), key="qgis_found"))
         if len(installs) > 1:
             checks.append(Check(t("doctor_qgis_multiple", count=len(installs)), None,
-                                ", ".join(str(q.root) for q in installs)))
+                                ", ".join(str(q.root) for q in installs), key="qgis_multiple"))
 
         log(t("doctor_checking_import"))
         ok = _python_can_import(qgis.python_exe, "qgis.core", qgis=qgis)
-        checks.append(Check(t("doctor_qgis_import"), ok, "" if ok else t("doctor_qgis_import_hint")))
+        checks.append(Check(t("doctor_qgis_import"), ok, "" if ok else t("doctor_qgis_import_hint"),
+                            key="qgis_import"))
 
         ok = _python_can_import(qgis.python_exe, "debugpy", timeout=15)
-        checks.append(Check(t("doctor_debugpy_qgis"), ok, "" if ok else t("doctor_debugpy_qgis_hint")))
+        checks.append(Check(t("doctor_debugpy_qgis"), ok, "" if ok else t("doctor_debugpy_qgis_hint"),
+                            key="debugpy_qgis"))
 
     enabled = _plugin_enabled_anywhere()
     if enabled is None:
-        checks.append(Check(t("doctor_plugin_installed"), False, t("doctor_plugin_not_installed_hint")))
+        checks.append(Check(t("doctor_plugin_installed"), False, t("doctor_plugin_not_installed_hint"),
+                            key="plugin_installed"))
     else:
         checks.append(Check(t("doctor_plugin_enabled"), enabled,
-                            "" if enabled else t("doctor_plugin_not_enabled_hint")))
+                            "" if enabled else t("doctor_plugin_not_enabled_hint"), key="plugin_enabled"))
 
     port = port if port is not None else vscode_config.DEFAULT_PORT
     free = _port_free("localhost", port)
-    checks.append(Check(t("doctor_port_free", port=port), free, "" if free else t("doctor_port_busy_hint")))
+    checks.append(Check(t("doctor_port_free", port=port), free, "" if free else t("doctor_port_busy_hint"),
+                        key="port_free"))
 
     if project_dir is not None:
         project_dir = Path(project_dir).resolve()
@@ -141,26 +151,67 @@ def run_checks(project_dir: Path | None = None, port: int | None = None,
         if venv_python.exists():
             log(t("doctor_checking_import"))
             ok = _python_can_import(venv_python, "qgis.core")
-            checks.append(Check(t("doctor_venv_import"), ok, "" if ok else t("doctor_venv_import_hint")))
+            checks.append(Check(t("doctor_venv_import"), ok, "" if ok else t("doctor_venv_import_hint"),
+                                key="venv_import"))
             ok = _python_can_import(venv_python, "debugpy", timeout=15)
-            checks.append(Check(t("doctor_debugpy_venv"), ok, "" if ok else t("doctor_debugpy_venv_hint")))
+            checks.append(Check(t("doctor_debugpy_venv"), ok, "" if ok else t("doctor_debugpy_venv_hint"),
+                                key="debugpy_venv"))
         else:
-            checks.append(Check(t("doctor_venv_import"), False, t("doctor_no_venv_hint")))
+            checks.append(Check(t("doctor_venv_import"), False, t("doctor_no_venv_hint"), key="venv_import"))
 
         has_cfg = (project_dir / project_config.CONFIG_NAME).exists()
         checks.append(Check(t("doctor_devbridge_json"), has_cfg,
-                            "" if has_cfg else t("doctor_no_devbridge_json_hint")))
+                            "" if has_cfg else t("doctor_no_devbridge_json_hint"), key="devbridge_json"))
         if has_cfg:
             cfg_host = project_config.read_project_config(project_dir)["host"]
             if not is_local_host(cfg_host):
                 checks.append(Check(t("doctor_host_local"), None,
-                                    t("doctor_host_not_local_hint", host=cfg_host)))
+                                    t("doctor_host_not_local_hint", host=cfg_host), key="host_local"))
 
         has_attach = _vscode_has_attach_config(project_dir)
         checks.append(Check(t("doctor_vscode_config"), has_attach,
-                            "" if has_attach else t("doctor_no_vscode_hint")))
+                            "" if has_attach else t("doctor_no_vscode_hint"), key="vscode_config"))
 
     return checks
+
+
+def apply_fixes(checks: list[Check], project_dir: Path | None = None, port: int | None = None,
+                qgis: QgisInstallation | None = None, log: Callable[[str], None] = print) -> bool:
+    """Best-effort fixes for the failed checks in FIXABLE_KEYS - never
+    touches anything doctor didn't already flag as broken, and never
+    fixes 'qgis_found'/'qgis_import'/'port_free' (nothing safe to do about
+    those automatically). Returns True if it attempted at least one fix;
+    the caller should re-run run_checks() afterwards to see whether it
+    actually worked."""
+    failed = {c.key for c in checks if c.ok is False and c.key in FIXABLE_KEYS}
+    if not failed:
+        return False
+
+    if "plugin_installed" in failed or "plugin_enabled" in failed:
+        log(t("doctor_fix_plugin"))
+        bridge_plugin.install_into_profiles(log=log)
+
+    project_keys = {"venv_import", "debugpy_venv", "devbridge_json", "vscode_config"}
+    needs_project_fix = project_dir is not None and bool(failed & project_keys)
+    if needs_project_fix:
+        log(t("doctor_fix_project"))
+        try:
+            pipeline.run_setup(Path(project_dir).resolve(), port=port or vscode_config.DEFAULT_PORT,
+                               qgis=qgis, log=log)
+        except pipeline.SetupError as err:
+            log(str(err))
+
+    if "debugpy_qgis" in failed and not needs_project_fix:
+        if qgis is None:
+            try:
+                qgis = pipeline.find_qgis(log=log)
+            except pipeline.SetupError:
+                qgis = None
+        if qgis is not None:
+            log(t("doctor_fix_debugpy_qgis"))
+            debugpy_installer.install_debugpy(qgis, verbose_print=log)
+
+    return True
 
 
 def print_report(checks: list[Check], log: Callable[[str], None] = print) -> bool:

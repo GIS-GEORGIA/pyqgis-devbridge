@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 ### Added
+- `devbridge doctor --fix`: after reporting, retries what's safe to retry automatically - installs/enables
+  the DevBridge plugin, installs `debugpy` into QGIS's Python, or (with `--project-dir`) reruns `devbridge
+  setup` for that project - then re-checks and reports again. Never touches a check it has no safe fix for
+  (QGIS not found, a failing `qgis.core` import, a busy port, a deliberately non-local host). `Check` gained
+  a stable `key` (language-independent) alongside its translated `label`, and the new `apply_fixes()`
+  dispatches on it. A "Fix what's safe" button was added to the desktop tool next to "Run diagnostics".
+  End-to-end verified: a project missing its `.venv`/`.devbridge.json`/`.vscode` was fully repaired by one
+  `--fix` run against real QGIS.
 - `devbridge setup` now also writes PyCharm's "Python Debug Server" run configuration
   (`.idea/runConfigurations/PyQGIS_Debug_Server.xml`) - PyCharm's own `+ > Python Debug Server` step, the
   last fully-manual part of PyCharm support, done for you (host/port from the shared settings, the same

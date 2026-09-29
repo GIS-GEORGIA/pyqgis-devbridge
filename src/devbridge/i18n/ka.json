@@ -149,5 +149,11 @@
   "new_script_created": "ახალი სკრიპტი შეიქმნა: {path}",
   "new_script_name_invalid": "'{name}' სკრიპტის სწორი სახელი არ არის: გამოიყენეთ ლათინური ასოები, ციფრები, _ და -, ასოთი ან ციფრით დაწყებული (1-80 სიმბოლო).",
   "new_script_exists": "{path} უკვე არსებობს.",
-  "new_script_next_steps": "შემდეგ: გახსენით საქაღალდე VS Code-ში, გახსენით სკრიპტი და Run and Debug-ში აირჩიეთ \"PyQGIS: Debug current file (no QGIS)\"."
+  "new_script_next_steps": "შემდეგ: გახსენით საქაღალდე VS Code-ში, გახსენით სკრიპტი და Run and Debug-ში აირჩიეთ \"PyQGIS: Debug current file (no QGIS)\".",
+  "doctor_fix_header": "ზოგიერთი შემოწმება ვერ გავიდა - ვცდი, ავტომატურად გამოვასწორო ის, რისი გამოსწორებაც უსაფრთხოა...",
+  "doctor_fix_plugin": "DevBridge plugin-ის დაყენება/ჩართვა თქვენს QGIS პროფილში...",
+  "doctor_fix_project": "პროექტის მომზადება ხელახლა (venv, debugpy, .devbridge.json, .vscode)...",
+  "doctor_fix_debugpy_qgis": "debugpy-ს დაყენება QGIS-ის Python-ში...",
+  "doctor_fix_rechecking": "ხელახლა მოწმდება...",
+  "gui_doctor_fix": "უსაფრთხოს გამოსწორება"
 }

@@ -149,5 +149,11 @@
   "new_script_created": "New script created: {path}",
   "new_script_name_invalid": "'{name}' is not a valid script name: use letters, digits, _ and -, starting with a letter or digit (1-80 characters).",
   "new_script_exists": "{path} already exists.",
-  "new_script_next_steps": "Next: open the folder in VS Code, open the script, and pick \"PyQGIS: Debug current file (no QGIS)\" in Run and Debug."
+  "new_script_next_steps": "Next: open the folder in VS Code, open the script, and pick \"PyQGIS: Debug current file (no QGIS)\" in Run and Debug.",
+  "doctor_fix_header": "Some checks failed - trying to fix what's safe to fix automatically...",
+  "doctor_fix_plugin": "Installing/enabling the DevBridge plugin in your QGIS profile...",
+  "doctor_fix_project": "Re-running setup for this project (venv, debugpy, .devbridge.json, .vscode)...",
+  "doctor_fix_debugpy_qgis": "Installing debugpy into QGIS's Python...",
+  "doctor_fix_rechecking": "Re-checking...",
+  "gui_doctor_fix": "Fix what's safe"
 }
