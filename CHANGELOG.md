@@ -1,6 +1,16 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- `devbridge launch` (and VS Code's F5 "Launch QGIS + attach", and the desktop tool's "Launch QGIS (debug)")
+  no longer opens a second, redundant QGIS when a session with the bridge already listening on that host/port
+  is still open - it now reports success immediately and lets VS Code/PyCharm attach to the existing one
+  instead of just warning and launching a duplicate anyway (the previous behavior). `--force-new` opts back
+  into always starting a fresh instance. `launcher.launch_qgis()` gained `reuse_existing: bool = True`.
+  Confirmed for real: launching a QGIS session, then running `devbridge launch` again at the same host/port,
+  reports success immediately and leaves exactly one QGIS process running - no executable lookup or `Popen`
+  call happens in that path at all.
+
 ### Added
 - `devbridge doctor --fix`: after reporting, retries what's safe to retry automatically - installs/enables
   the DevBridge plugin, installs `debugpy` into QGIS's Python, or (with `--project-dir`) reruns `devbridge

@@ -189,7 +189,20 @@ def launch_qgis(qgis: QgisInstallation, *, host: str = "localhost", port: int = 
                 timeout: float = 60.0, project_file: str | None = None,
                 extra_args: Sequence[str] = (), verbose_print=print,
                 popen=subprocess.Popen, work_dir: Path | None = None,
-                system: str | None = None) -> int:
+                system: str | None = None, reuse_existing: bool = True) -> int:
+    """Starts QGIS with the debug bridge listening - unless `reuse_existing`
+    (the default) finds the port already taken, in which case it assumes
+    that's an already-running QGIS session with its own bridge already up
+    (the common case: you never closed the last one) and reports success
+    immediately without opening a second, redundant QGIS. VS Code's own
+    "attach" step then connects to that existing session instead - exactly
+    what pressing F5 on "Launch QGIS + attach" usually means in practice.
+    Pass `reuse_existing=False` (`devbridge launch --force-new`) to always
+    start a fresh instance instead."""
+    if reuse_existing and not port_free(host, port):
+        verbose_print(t("launch_reusing_existing", host=host, port=port))
+        return 0
+
     exe = find_qgis_executable(qgis, system=system)
     if exe is None:
         verbose_print(t("qgis_exe_not_found"))

@@ -46,6 +46,15 @@ only then lets VS Code attach — no manual "Start Debug Bridge" click needed fi
 `devbridge launch --wait-ready`; the desktop tool has the same as a **"Launch QGIS (debug)"** button. Confirmed
 against a real QGIS 3.44.5 (standalone install and OSGeo4W).
 
+If a QGIS session with the bridge already listening on that host/port is still open (you never closed it, or
+just didn't restart it since your last debug session), pressing F5 on **"Launch QGIS + attach"** does *not*
+open a second QGIS - it detects the port is already taken, assumes that's your existing session, and lets
+VS Code attach to it directly. No duplicate, slow-to-start QGIS window on every F5, which matters on a machine
+where running two at once is a real problem, not just an inconvenience. Confirmed for real: launching a QGIS
+session, then running `devbridge launch` again at the same host/port, reports success immediately and leaves
+exactly one QGIS process running. Pass `--force-new` (`devbridge launch --force-new`) on the rare occasion you
+actually want a second, independent QGIS instance regardless.
+
 Settings (language, ports) are stored in one file shared by the panel, the desktop tool and the
 `devbridge` command. Its location is shown on the *Desktop tool* tab.
 

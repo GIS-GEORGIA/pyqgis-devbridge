@@ -271,7 +271,8 @@ def cmd_launch(args: argparse.Namespace) -> int:
     return launcher.launch_qgis(
         qgis, host=host, port=port, wait_for_client=args.wait_for_client,
         wait_ready=args.wait_ready, timeout=args.timeout,
-        project_file=args.qgis_project, verbose_print=print)
+        project_file=args.qgis_project, verbose_print=print,
+        reuse_existing=not args.force_new)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -316,6 +317,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_launch.add_argument("--qgis-project", default=None, help="Optional .qgz/.qgs to open")
     p_launch.add_argument("--qgis-root", default=None,
                           help="Use this specific QGIS install (see 'devbridge detect')")
+    p_launch.add_argument("--force-new", action="store_true",
+                          help="Always start a fresh QGIS, even if the port is already in use (default: "
+                               "assume that's an already-running session with the bridge up and reuse it, "
+                               "no second QGIS window)")
     p_launch.set_defaults(func=cmd_launch)
 
     p_plugins = sub.add_parser("plugins", help="List plugins found in your QGIS profile")

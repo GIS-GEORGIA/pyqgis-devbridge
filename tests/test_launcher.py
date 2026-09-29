@@ -203,10 +203,29 @@ def test_launch_qgis_without_executable_fails_cleanly(tmp_path: Path, monkeypatc
     assert msgs
 
 
-def test_launch_qgis_warns_but_still_launches_when_port_busy(tmp_path: Path, monkeypatch):
-    """A busy port (typically a still-running earlier QGIS session) should
-    not block launching a new one - just warn, since the user may want to
-    attach to the already-running bridge instead."""
+def test_launch_qgis_reuses_an_existing_session_by_default_when_port_busy(tmp_path: Path, monkeypatch):
+    """A busy port almost always means an earlier QGIS session's bridge is
+    still up - the default is to use that instead of opening a redundant
+    second QGIS window (real complaint: a duplicate, slow-to-start QGIS on
+    every F5, on a machine where running two at once is genuinely a
+    problem). No executable lookup, no Popen at all in this path."""
+    monkeypatch.setattr(launcher.shutil, "which", lambda n: pytest.fail("must not look up an executable"))
+    monkeypatch.setattr(launcher, "port_free", lambda host, port: False)
+
+    def fake_popen(cmd, **kwargs):
+        pytest.fail("must not spawn a second QGIS")
+
+    msgs = []
+    rc = launcher.launch_qgis(_qgis(tmp_path), host="localhost", port=5999, wait_ready=True,
+                              timeout=5, popen=fake_popen, work_dir=tmp_path / "w",
+                              verbose_print=msgs.append, system="Linux")
+    assert rc == 0
+    assert any("5999" in m for m in msgs)
+
+
+def test_launch_qgis_force_new_still_launches_a_second_instance_when_port_busy(tmp_path: Path, monkeypatch):
+    """The explicit opt-out (devbridge launch --force-new): same busy-port
+    situation, but the caller asked for a fresh QGIS regardless."""
     monkeypatch.setattr(launcher.shutil, "which", lambda n: "/usr/bin/qgis" if n == "qgis" else None)
     monkeypatch.setattr(launcher, "port_free", lambda host, port: False)
 
@@ -217,7 +236,7 @@ def test_launch_qgis_warns_but_still_launches_when_port_busy(tmp_path: Path, mon
     msgs = []
     rc = launcher.launch_qgis(_qgis(tmp_path), host="localhost", port=5999, wait_ready=True,
                               timeout=5, popen=fake_popen, work_dir=tmp_path / "w",
-                              verbose_print=msgs.append, system="Linux")
+                              verbose_print=msgs.append, system="Linux", reuse_existing=False)
     assert rc == 0
     assert any("5999" in m for m in msgs)
 

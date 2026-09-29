@@ -155,5 +155,6 @@
   "doctor_fix_project": "Re-running setup for this project (venv, debugpy, .devbridge.json, .vscode)...",
   "doctor_fix_debugpy_qgis": "Installing debugpy into QGIS's Python...",
   "doctor_fix_rechecking": "Re-checking...",
-  "gui_doctor_fix": "Fix what's safe"
+  "gui_doctor_fix": "Fix what's safe",
+  "launch_reusing_existing": "{host}:{port} is already in use - assuming that's an already-running QGIS with the debug bridge listening and using it instead of starting a second QGIS. Attach from VS Code/PyCharm now. (Pass --force-new to always start a fresh QGIS instead.)"
 }

@@ -155,5 +155,6 @@
   "doctor_fix_project": "პროექტის მომზადება ხელახლა (venv, debugpy, .devbridge.json, .vscode)...",
   "doctor_fix_debugpy_qgis": "debugpy-ს დაყენება QGIS-ის Python-ში...",
   "doctor_fix_rechecking": "ხელახლა მოწმდება...",
-  "gui_doctor_fix": "უსაფრთხოს გამოსწორება"
+  "gui_doctor_fix": "უსაფრთხოს გამოსწორება",
+  "launch_reusing_existing": "{host}:{port} უკვე დაკავებულია - ვვარაუდობთ, რომ ეს უკვე გაშვებული QGIS-ია ჩართული დებაგ ხიდით, და ვიყენებთ მას მეორე QGIS-ის გაშვების ნაცვლად. დაუკავშირდით VS Code/PyCharm-იდან ახლავე. (ყოველთვის ახალი QGIS-ის გასაშვებად გამოიყენეთ --force-new.)"
 }
