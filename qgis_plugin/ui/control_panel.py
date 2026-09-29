@@ -104,11 +104,14 @@ class ControlPanel(QDialog):
         reload_row.addWidget(self.reload_status, 1)
         layout.addLayout(reload_row)
 
+        # Tab order follows the actual order of use: read the guide, prepare the
+        # plugin (venv/debugpy/.vscode), *then* start a bridge - VS Code before
+        # PyCharm since it needs no separate IDE-side step first.
         self.tabs = QTabWidget()
         self.tabs.addTab(self._build_guide_tab(), "")
+        self.tabs.addTab(self._build_project_tab(), "")
         self.tabs.addTab(self._build_vscode_tab(), "")
         self.tabs.addTab(self._build_pycharm_tab(), "")
-        self.tabs.addTab(self._build_project_tab(), "")
         self.tabs.addTab(self._build_tool_tab(), "")
         layout.addWidget(self.tabs)
 
@@ -138,7 +141,7 @@ class ControlPanel(QDialog):
         self.setWindowTitle(t("cp_title"))
         for setter, key in self._i18n:
             setter(t(key))
-        for i, key in enumerate(("cp_tab_guide", "cp_tab_vscode", "cp_tab_pycharm", "cp_tab_project", "cp_tab_tool")):
+        for i, key in enumerate(("cp_tab_guide", "cp_tab_project", "cp_tab_vscode", "cp_tab_pycharm", "cp_tab_tool")):
             self.tabs.setTabText(i, t(key))
         self.plugin_combo.setItemText(0, t("cp_plugin_placeholder"))     # keep the user's pick, retitle entry 0
         self.reload_combo.setItemText(0, t("cp_plugin_placeholder"))

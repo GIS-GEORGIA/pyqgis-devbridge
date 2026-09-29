@@ -6,14 +6,14 @@ Plugins → DevBridge → **Control Panel** (also a toolbar button). A **"Reload
 top, visible regardless of which tab you're on: pick a plugin already enabled in this QGIS session and press
 *Reload in QGIS* to re-import its code and restart it — the same trick the separate "Plugin Reloader" plugin
 does, built in here so an edit-in-VS-Code / see-it-live loop needs no extra plugin and no QGIS restart. Five
-tabs below it, language switch (English / ქართული) at the very top:
+tabs below it, language switch (English / ქართული) at the very top, in the order you'll actually use them:
 
 - **How to use** — the step-by-step instructions (first tab).
-- **VS Code** — host/port, *Start / Stop debug bridge*, status.
-- **PyCharm** — host/port, *Auto-configure & start*, *Stop*, manual instructions.
 - **Prepare a plugin** — first choose what you want: *Improve an existing plugin* (the list covers every QGIS profile, QGIS 3 and 4), *Start a NEW plugin* (type a lowercase name; DevBridge writes a small working starter plugin into your profile's plugins folder) or *Any folder*. Then press
   *Prepare for debugging*: creates `.venv`, installs `debugpy`, writes `.vscode/launch.json`. Progress and
   pip output appear in the log. *Open folder* / *Open in VS Code* do what they say.
+- **VS Code** — host/port, *Start / Stop debug bridge*, status.
+- **PyCharm** — host/port, *Auto-configure & start*, *Stop*, manual instructions.
 - **Desktop tool** — *Launch desktop tool* opens the standalone window (same operations, no QGIS
   needed, also lets you install/enable the plugin in your profile); *Open tool folder* opens the folder
   it lives in. Needs a Python with Tk on the machine (python.org installers include it).

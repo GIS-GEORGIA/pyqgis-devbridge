@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Control Panel tab order now matches the order you actually use them in: "Prepare a plugin" moved before
+  "VS Code" (it used to come after PyCharm, contradicting the "How to use" tab's own numbered steps, which
+  already said to prepare the plugin first). "How to use" now opens with a one-line tab roadmap.
+
 ### Added
 - `devbridge new-script NAME`: writes a starter standalone script (`QgsApplication([], False)` + `initQgis()`/
   `exitQgis()`, ready for the "PyQGIS: Debug current file (no QGIS)" launch config) and prepares its folder the
