@@ -7,6 +7,7 @@
     devbridge setup --project-dir .        # or work on any folder instead
     devbridge plugins         # list plugins found in your QGIS profile
     devbridge new my_plugin   # start a NEW plugin (starter files) and prepare it for debugging
+    devbridge new-script my_script  # start a standalone script (no QGIS needed) and prepare it for debugging
     devbridge launch          # start QGIS with the debug bridge already listening (for VS Code's F5)
     devbridge install-plugin  # put the DevBridge QGIS plugin into your profile and enable it
     devbridge link-plugin PATH  # link any other plugin folder into your QGIS profile and enable it
@@ -108,6 +109,28 @@ def _new_plugin(name: str | None, parent: str | None, title: str | None = None) 
     return path.resolve()
 
 
+def _new_script(name: str | None, directory: str | None, title: str | None = None) -> Path | None:
+    """Create the starter script, prompting for the name on a terminal. None = nothing created."""
+    if not name:
+        if not sys.stdin.isatty():
+            print(t("new_script_name_needed"))
+            return None
+        try:
+            name = input(t("new_script_name_prompt")).strip()
+        except EOFError:            # isatty() can lie (piped/wrapped terminals); never hang or crash
+            return None
+        if not name:
+            return None
+    parent_dir = Path(directory) if directory else Path(".")
+    try:
+        path = scaffold.create_script(parent_dir, name, title=title)
+    except scaffold.ScaffoldError as err:
+        print(t(f"new_{err}", name=name, path=parent_dir))
+        return None
+    print(t("new_script_created", path=path))
+    return path.resolve()
+
+
 def _resolve_project_dir(args: argparse.Namespace) -> Path | None:
     """--project-dir wins; otherwise take the plugin straight from the
     QGIS profile folder."""
@@ -140,6 +163,22 @@ def cmd_new(args: argparse.Namespace) -> int:
         print(err)
         return 1
     print(t("new_next_steps"))
+    return 0
+
+
+def cmd_new_script(args: argparse.Namespace) -> int:
+    path = _new_script(args.name, args.dir, args.title)
+    if path is None:
+        return 1
+    if args.no_setup:
+        return 0
+    try:
+        qgis = pipeline.find_qgis(qgis_root=args.qgis_root, ask=_ask_qgis)
+        pipeline.run_setup(path.parent, port=args.port, qgis=qgis)
+    except pipeline.SetupError as err:
+        print(err)
+        return 1
+    print(t("new_script_next_steps"))
     return 0
 
 
@@ -277,6 +316,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_new.add_argument("--qgis-root", default=None,
                         help="Use this specific QGIS install (see 'devbridge detect')")
     p_new.set_defaults(func=cmd_new)
+
+    p_new_script = sub.add_parser(
+        "new-script", help="Start a standalone PyQGIS script (no QGIS needed) and prepare it for debugging")
+    p_new_script.add_argument("name", nargs="?",
+                              help="Script file name, e.g. my_script (asked if omitted; .py added automatically)")
+    p_new_script.add_argument("--dir", default=None, help="Folder to create it in (default: current directory)")
+    p_new_script.add_argument("--title", default=None,
+                              help="Display name in the file's docstring (default: derived from the file name)")
+    p_new_script.add_argument("--port", type=int, default=config.load()["port"], help="debugpy attach port")
+    p_new_script.add_argument("--no-setup", action="store_true", help="Only write the script, skip venv/IDE setup")
+    p_new_script.add_argument("--qgis-root", default=None,
+                              help="Use this specific QGIS install (see 'devbridge detect')")
+    p_new_script.set_defaults(func=cmd_new_script)
 
     p_bridge = sub.add_parser("install-plugin",
                               help="Install the DevBridge QGIS plugin into your profile and enable it")

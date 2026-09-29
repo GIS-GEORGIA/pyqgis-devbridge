@@ -13,6 +13,10 @@ from pathlib import Path
 _NAME_RE = re.compile(r"^[a-z][a-z0-9_]{1,39}$")
 _RESERVED = {"devbridge", "qgis", "test", "tests", "plugin", "plugins", "core", "gui", "utils"}
 
+# A script is just a file name, not an importable package - only bad path
+# characters and an unreasonable length are actually disallowed.
+_SCRIPT_NAME_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_\-]{0,79}$")
+
 
 class ScaffoldError(ValueError):
     """`str(exc)` is a translation key (name_invalid, name_reserved, exists, parent_missing)."""
@@ -23,6 +27,11 @@ def validate_name(name: str) -> None:
         raise ScaffoldError("name_invalid")
     if name in _RESERVED:
         raise ScaffoldError("name_reserved")
+
+
+def validate_script_name(name: str) -> None:
+    if not _SCRIPT_NAME_RE.match((name or "").removesuffix(".py")):
+        raise ScaffoldError("script_name_invalid")
 
 
 def default_title(name: str) -> str:
@@ -96,6 +105,44 @@ __pycache__/
 .idea/
 .pycharm-debug/
 '''
+
+
+_SCRIPT = '''\
+"""{title} - standalone PyQGIS script, no running QGIS needed.
+
+Run it with the "PyQGIS: Debug current file (no QGIS)" launch config
+(.vscode/launch.json, written by `devbridge setup`): open this file, pick
+that configuration in Run and Debug, press F5. Or from a terminal with the
+venv active: python {filename}
+"""
+from qgis.core import Qgis, QgsApplication
+
+qgs = QgsApplication([], False)   # False = no GUI
+qgs.initQgis()
+
+try:
+    # Put a breakpoint on the next line, then start debugging.
+    print("QGIS", Qgis.QGIS_VERSION)
+finally:
+    qgs.exitQgis()
+'''
+
+
+def create_script(parent_dir: Path, name: str, title: str | None = None) -> Path:
+    """Write `<parent_dir>/<name>.py` (adding `.py` if missing) and return
+    its path. Unlike `create_plugin`, the parent folder is created if
+    needed - a script has no QGIS-profile-layout requirement to get right."""
+    validate_script_name(name)
+    parent_dir = Path(parent_dir)
+    parent_dir.mkdir(parents=True, exist_ok=True)
+    filename = name if name.endswith(".py") else f"{name}.py"
+    target = parent_dir / filename
+    if target.exists():
+        raise ScaffoldError("script_exists")
+
+    title = (title or default_title(filename.removesuffix(".py"))).replace('"', "'")
+    target.write_text(_SCRIPT.format(title=title, filename=filename), encoding="utf-8", newline="\n")
+    return target
 
 
 def create_plugin(parent_dir: Path, name: str, title: str | None = None,

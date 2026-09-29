@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 ### Added
+- `devbridge new-script NAME`: writes a starter standalone script (`QgsApplication([], False)` + `initQgis()`/
+  `exitQgis()`, ready for the "PyQGIS: Debug current file (no QGIS)" launch config) and prepares its folder the
+  same way `devbridge new` does for a plugin (`--dir`, `--no-setup`). New `scaffold.create_script`.
 - Third VS Code launch configuration, "PyQGIS: Debug current file (no QGIS)": a plain `request: launch` config
   (the venv's interpreter, `program: ${file}`) for a standalone script that only needs `qgis.core`/
   `qgis.analysis` (`QgsApplication([], False)` + `initQgis()`), no QGIS session/bridge/port at all - confirmed

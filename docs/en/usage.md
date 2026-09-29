@@ -152,6 +152,10 @@ OSGeo4W and a standalone QGIS install: the venv `devbridge setup` builds already
 Setting `QGIS_PREFIX_PATH` by hand was tried first and instead broke the `qgis.core` import outright ("DLL load
 failed"), so don't add it unless something specific tells you to.
 
+`devbridge new-script my_script` writes exactly that starter file (`.py` added automatically) and prepares the
+containing folder the same way `devbridge new` does for a plugin (`--dir` to choose where, default: the current
+directory; `--no-setup` to only write the file). Terminal-only for now, no desktop-tool button yet.
+
 ### Without the Control Panel
 
 Everything above can also be done from the plugin's menu directly, without opening the panel:
