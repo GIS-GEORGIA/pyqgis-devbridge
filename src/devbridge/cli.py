@@ -131,6 +131,13 @@ def _new_script(name: str | None, directory: str | None, title: str | None = Non
     return path.resolve()
 
 
+def _pycharm_kwargs() -> dict:
+    """The shared settings' PyCharm host/port, ready to splat into
+    pipeline.run_setup(**_pycharm_kwargs())."""
+    cfg = config.load()
+    return {"pycharm_host": cfg["pycharm_host"], "pycharm_port": cfg["pycharm_port"]}
+
+
 def _resolve_project_dir(args: argparse.Namespace) -> Path | None:
     """--project-dir wins; otherwise take the plugin straight from the
     QGIS profile folder."""
@@ -158,7 +165,7 @@ def cmd_new(args: argparse.Namespace) -> int:
         return 0
     try:
         qgis = pipeline.find_qgis(qgis_root=args.qgis_root, ask=_ask_qgis)
-        pipeline.run_setup(path, port=args.port, qgis=qgis)
+        pipeline.run_setup(path, port=args.port, qgis=qgis, **_pycharm_kwargs())
     except pipeline.SetupError as err:
         print(err)
         return 1
@@ -174,7 +181,7 @@ def cmd_new_script(args: argparse.Namespace) -> int:
         return 0
     try:
         qgis = pipeline.find_qgis(qgis_root=args.qgis_root, ask=_ask_qgis)
-        pipeline.run_setup(path.parent, port=args.port, qgis=qgis)
+        pipeline.run_setup(path.parent, port=args.port, qgis=qgis, **_pycharm_kwargs())
     except pipeline.SetupError as err:
         print(err)
         return 1
@@ -233,7 +240,7 @@ def cmd_setup(args: argparse.Namespace) -> int:
     try:
         qgis = pipeline.find_qgis(qgis_root=args.qgis_root, ask=_ask_qgis)
         pipeline.run_setup(project_dir, port=args.port, venv_name=args.venv_name,
-                           host=args.host, plugin_name=args.plugin_name, qgis=qgis)
+                           host=args.host, plugin_name=args.plugin_name, qgis=qgis, **_pycharm_kwargs())
     except pipeline.SetupError as err:
         print(err)
         return 1

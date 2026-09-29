@@ -349,11 +349,14 @@ class DevBridgeApp(ttk.Frame):
         self.run_btn.state(["disabled"])
         # Read every Tk widget/variable here, on the main thread - not in the worker thread below.
         qgis, is_new = self._selected_qgis(), self.mode.get() == "new"
-        threading.Thread(target=self._setup_worker, args=(path, cfg["port"], qgis, is_new), daemon=True).start()
+        threading.Thread(target=self._setup_worker,
+                         args=(path, cfg["port"], cfg["pycharm_host"], cfg["pycharm_port"], qgis, is_new),
+                         daemon=True).start()
 
-    def _setup_worker(self, path: Path, port: int, qgis, is_new: bool) -> None:
+    def _setup_worker(self, path: Path, port: int, pycharm_host: str, pycharm_port: int, qgis, is_new: bool) -> None:
         try:
-            pipeline.run_setup(path, port=port, log=self._log, qgis=qgis)
+            pipeline.run_setup(path, port=port, pycharm_host=pycharm_host, pycharm_port=pycharm_port,
+                               log=self._log, qgis=qgis)
             if is_new:
                 self._log(t("new_next_steps"))
         except Exception as exc:  # surfaced in the log pane, not a stack-trace dialog

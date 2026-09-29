@@ -1,6 +1,17 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `devbridge setup` now also writes PyCharm's "Python Debug Server" run configuration
+  (`.idea/runConfigurations/PyQGIS_Debug_Server.xml`) - PyCharm's own `+ > Python Debug Server` step, the
+  last fully-manual part of PyCharm support, done for you (host/port from the shared settings, the same
+  path mapping the VS Code config gets for a profile plugin). New `pycharm_run_config.py` /
+  `pycharm_config.write_pycharm_run_config`. Its exact XML shape is cross-checked against PyCharm
+  2025.2.6.1's own field labels (extracted from its installed `python-ce.jar`) and a real, actively used
+  open-source tool generating the same configuration (`QuantConnect/lean-cli`); opening a real PyCharm
+  project containing the generated file produces no error in its own log. Not confirmed: pressing Debug on
+  it in a real PyCharm window (no UI automation available here) - see the module's docstring.
+
 ### Changed
 - Control Panel tab order now matches the order you actually use them in: "Prepare a plugin" moved before
   "VS Code" (it used to come after PyCharm, contradicting the "How to use" tab's own numbered steps, which

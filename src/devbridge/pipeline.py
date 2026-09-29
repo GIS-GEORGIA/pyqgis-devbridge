@@ -83,7 +83,8 @@ def _resolve_port(host: str, port: int, log: Callable[[str], None]) -> int:
 def run_setup(project_dir: Path, port: int = vscode_config.DEFAULT_PORT,
               venv_name: str = ".venv", log: Callable[[str], None] = print,
               qgis: QgisInstallation | None = None, host: str = "localhost",
-              plugin_name: str | None = None) -> None:
+              plugin_name: str | None = None, pycharm_host: str = "localhost",
+              pycharm_port: int = 12345) -> None:
     """Detect QGIS, build the venv, install debugpy, write .devbridge.json +
     IDE configs. `plugin_name` is auto-detected from the folder layout
     (`<profile>/python/plugins/<name>`) when not given explicitly."""
@@ -104,6 +105,8 @@ def run_setup(project_dir: Path, port: int = vscode_config.DEFAULT_PORT,
         project_dir, venv_path, port=port, verbose_print=log,
         host=host, plugin_name=plugin_name, lang=get_lang())
     pycharm_config.write_pycharm_notes(project_dir, verbose_print=log)
+    pycharm_config.write_pycharm_run_config(
+        project_dir, host=pycharm_host, port=pycharm_port, plugin_name=plugin_name, verbose_print=log)
     ignored = gitignore.ensure_ignored(project_dir, venv_name)
     if ignored:
         log(t("wrote_file", path=ignored))

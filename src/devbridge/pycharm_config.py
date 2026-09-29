@@ -1,19 +1,22 @@
 """PyCharm's remote-debug protocol (pydevd) is not wire-compatible with
 debugpy, so we cannot share one bridge implementation across both IDEs.
-Instead we write a small run-config template plus a README note that
-tells the user exactly what to install on the QGIS side
-(`pip install pydevd-pycharm==<version matching PyCharm build>`).
 
-This keeps scope honest: PyCharm support is "documented + scaffolded",
-not "one-click" like the VS Code path, and that distinction should be
-called out explicitly wherever this module's output is used (docs,
-book chapter, README).
+Two things get written for the PyCharm side of `devbridge setup`:
+- a real, loadable "Python Debug Server" run configuration
+  (`.idea/runConfigurations/`, see `pycharm_run_config.py`) - PyCharm's
+  own "+ > Python Debug Server" step, done for you;
+- a README (`.pycharm-debug/`) as the fallback for when the automatic
+  PyCharm-build detection on the QGIS side
+  (`qgis_plugin/pycharm_bridge.py`) can't find a match, with the fully
+  manual steps.
 """
 from __future__ import annotations
 
 from pathlib import Path
 
+from . import pycharm_run_config
 from .i18n_util import t
+from .paths import qgis_user_plugins_dir
 
 _NOTE_EN = """\
 # PyCharm remote debugging — manual step required
@@ -74,3 +77,18 @@ def write_pycharm_notes(project_dir: Path, verbose_print=print) -> None:
     docs_dir.mkdir(parents=True, exist_ok=True)
     (docs_dir / "README.en.md").write_text(_NOTE_EN, encoding="utf-8")
     (docs_dir / "README.ka.md").write_text(_NOTE_KA, encoding="utf-8")
+
+
+def write_pycharm_run_config(project_dir: Path, host: str = "localhost", port: int = 12345,
+                             plugin_name: str | None = None, profile: str = "default",
+                             verbose_print=print) -> Path:
+    """Writes the "Python Debug Server" run configuration PyCharm would
+    otherwise need creating by hand (Run > Edit Configurations > + >
+    Python Debug Server) - see pycharm_run_config.py for what this is
+    checked against. `plugin_name` gets the same path mapping VS Code's
+    config gets, so breakpoints in the workspace match frames PyCharm
+    reports from the QGIS profile path."""
+    remote_root = str(qgis_user_plugins_dir(profile) / plugin_name) if plugin_name else None
+    path = pycharm_run_config.write_run_config(project_dir, host=host, port=port, remote_root=remote_root)
+    verbose_print(t("wrote_file", path=path))
+    return path

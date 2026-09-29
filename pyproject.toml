@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyqgis-devbridge"
-version = "0.8.0"
+version = "0.9.0"
 description = "Automated PyQGIS development environment setup + live debug bridge for VS Code / PyCharm (bilingual EN/KA)."
 readme = "README.md"
 requires-python = ">=3.9"
