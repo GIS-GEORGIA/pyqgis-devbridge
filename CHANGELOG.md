@@ -12,6 +12,9 @@
   call happens in that path at all.
 
 ### Added
+- Release workflow now also packages the VS Code extension, attaches the `.vsix` to the GitHub release and
+  publishes it to the VS Code Marketplace and Open VSX (needs the `VSCE_PAT` / `OVSX_PAT` repository
+  secrets; skipped when absent, and already-published versions are skipped). See CONTRIBUTING.md.
 - `devbridge doctor --fix`: after reporting, retries what's safe to retry automatically - installs/enables
   the DevBridge plugin, installs `debugpy` into QGIS's Python, or (with `--project-dir`) reruns `devbridge
   setup` for that project - then re-checks and reports again. Never touches a check it has no safe fix for

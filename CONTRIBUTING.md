@@ -11,3 +11,17 @@
 - macOS detector support is a known gap — contributions welcome in
   `src/devbridge/detectors/macos.py` following the pattern in
   `windows.py` / `linux.py`.
+
+## Publishing the VS Code extension
+
+`release.yml` publishes `extensions/vscode` on every `v*` tag. One-time setup:
+
+1. **VS Code Marketplace** - create the `gis-georgia` publisher at
+   <https://marketplace.visualstudio.com/manage>, then an Azure DevOps personal access token
+   (scope *Marketplace > Manage*, organization *All accessible organizations*) and store it as the
+   repository secret `VSCE_PAT`.
+2. **Open VSX** (VSCodium, Cursor, etc.) - sign in at <https://open-vsx.org>, create the `gis-georgia`
+   namespace (`npx ovsx create-namespace gis-georgia -p <token>`) and store the token as `OVSX_PAT`.
+
+To release a new extension version, bump `version` in `extensions/vscode/package.json` (and
+`package-lock.json`) before tagging. If the version is already published, the publish steps are skipped.
